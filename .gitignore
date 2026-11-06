@@ -23,7 +23,9 @@ Workspaces/**
 .vscode/mcp.json
 .codex/config.toml
 .claude/settings.local.json
-ls-live-instance.json
-ls-live-instance.json.tmp
 # END Lens Studio managed Agents-Docs block
 *.lock
+
+# Added by Lens Studio (LEAF plugin)
+leaf_plugin_settings.json
+ls-live-instance.json*

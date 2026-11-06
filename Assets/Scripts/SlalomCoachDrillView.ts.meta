@@ -1,0 +1,98 @@
+- !<AssetImportMetadata/cce215bc-38b0-46fb-b56c-e6704165821d>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 80a17f72-7cc7-46ed-be6c-091145c2bf8a
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 80a17f72-7cc7-46ed-be6c-091145c2bf8a
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 02b47260-fdfa-4ec0-b148-db3124ee5840
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/02b47260-fdfa-4ec0-b148-db3124ee5840>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: 0410736c-6d8c-4ed6-b288-f2c01dc1a565
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    coneColor: false
+    coneHeightCm: false
+    coneMissedColor: false
+    coneRadiusCm: false
+    finishBandDepthCm: false
+    finishColor: false
+    ghostStrength: false
+    highlightThicknessFactor: false
+    isGhost: false
+    padColor: false
+    pathBrightColor: false
+    pathColor: false
+    pathWidthCm: false
+    poleColor: false
+    poleHeightCm: false
+    poleHighlightColor: false
+    poleThicknessCm: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - isGhost: false
+      ghostStrength: 0.400000
+      coneHeightCm: !<float> 30.000000
+      coneRadiusCm: !<float> 10.000000
+      poleHeightCm: !<float> 100.000000
+      poleThicknessCm: !<float> 2.000000
+      highlightThicknessFactor: !<float> 2.000000
+      finishBandDepthCm: !<float> 30.000000
+      pathWidthCm: !<float> 10.000000
+      coneColor: !<Vec3> {x: 0.720000, y: 0.820000, z: 0.950000}
+      coneMissedColor: !<Vec3> {x: 1.000000, y: 0.620000, z: 0.050000}
+      poleColor: !<Vec3> {x: 0.200000, y: 0.550000, z: 0.620000}
+      poleHighlightColor: !<Vec3> {x: 0.650000, y: 1.000000, z: 1.000000}
+      pathColor: !<Vec3> {x: 0.150000, y: 0.750000, z: 0.800000}
+      pathBrightColor: !<Vec3> {x: 0.750000, y: 1.000000, z: 1.000000}
+      padColor: !<Vec3> {x: 0.300000, y: 0.700000, z: 0.750000}
+      finishColor: !<Vec3> {x: 0.900000, y: 0.950000, z: 1.000000}
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">SlalomCoachDrillView - one copy of the drill</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Settings"}'
+    - '// @input bool isGhost {"hint":"Faint copy shown while choosing where to place the drill"}'
+    - '// @input float ghostStrength = 0.4 {"hint":"Brightness of the ghost compared with the placed drill", "widget":"slider", "min":0.05, "max":1, "step":0.05}'
+    - '// @input float coneHeightCm = 30 {"hint":"Cone height in cm", "widget":"slider", "min":10, "max":60, "step":1}'
+    - '// @input float coneRadiusCm = 10 {"hint":"Cone base radius in cm", "widget":"slider", "min":4, "max":20, "step":1}'
+    - '// @input float poleHeightCm = 100 {"hint":"Marker pole height above the floor in cm", "widget":"slider", "min":50, "max":150, "step":5}'
+    - '// @input float poleThicknessCm = 2 {"hint":"Marker pole thickness in cm", "widget":"slider", "min":1, "max":6, "step":0.5}'
+    - '// @input float highlightThicknessFactor = 2 {"hint":"How many times thicker the highlighted next pole is than the others", "widget":"slider", "min":1, "max":4, "step":0.5}'
+    - '// @input float finishBandDepthCm = 30 {"hint":"Depth of the finish band along the drill, in cm", "widget":"slider", "min":10, "max":60, "step":1}'
+    - '// @input float pathWidthCm = 10 {"hint":"Width of the glowing path line in cm", "widget":"slider", "min":4, "max":30, "step":1}'
+    - '// @input vec3 coneColor = "{0.72,0.82,0.95}" {"hint":"Cone colour before and after a clean pass. Keep it clearly different from the miss colour", "widget":"color"}'
+    - '// @input vec3 coneMissedColor = "{1,0.62,0.05}" {"hint":"Cone colour after a miss", "widget":"color"}'
+    - '// @input vec3 poleColor = "{0.12,0.38,0.46}" {"hint":"Pole colour when it is not the next cone", "widget":"color"}'
+    - '// @input vec3 poleHighlightColor = "{0.85,1,1}" {"hint":"Pole colour when it is the next cone. Much brighter than the others", "widget":"color"}'
+    - '// @input vec3 pathColor = "{0.15,0.75,0.8}" {"hint":"Path line colour at rest", "widget":"color"}'
+    - '// @input vec3 pathBrightColor = "{0.75,1,1}" {"hint":"Path line colour when it brightens because the skater drifted away", "widget":"color"}'
+    - '// @input vec3 padColor = "{0.3,0.7,0.75}" {"hint":"Start pad colour", "widget":"color"}'
+    - '// @input vec3 finishColor = "{1,1,0.95}" {"hint":"Finish band colour. Bright and wide so it reads from a distance", "widget":"color"}'
+    - '// @ui {"widget":"group_end"}'

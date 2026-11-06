@@ -1,0 +1,161 @@
+- !<AssetImportMetadata/86832a6c-e8b8-49f7-bb97-216d0a920ee5>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> a1bc3f19-13b1-4234-942d-151fd8259fda
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> a1bc3f19-13b1-4234-942d-151fd8259fda
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> dc52fc3a-0f8a-45f7-b13c-bef62f3164b7
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/dc52fc3a-0f8a-45f7-b13c-bef62f3164b7>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: a92f9da4-1158-4705-b54d-ade09bbda3ff
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    backToLineCue: false
+    cameraObject: false
+    cue: false
+    cueAheadCm: false
+    cueHeightCm: false
+    cueSideOffsetCm: false
+    defaultSpacingM: false
+    driftDistanceCm: false
+    driftHoldSec: false
+    driftPulseSec: false
+    drill: false
+    edgeArrow: false
+    entryCue: false
+    exitCue: false
+    eyeHeightCm: false
+    farFromDrillCm: false
+    finishCard: false
+    finishCardDistanceCm: false
+    finishCardDropCm: false
+    finishPastLastConeCm: false
+    floor: false
+    ghost: false
+    ghostAheadCm: false
+    middleCue: false
+    padSizeCm: false
+    padToFirstConeCm: false
+    pathSwingCm: false
+    quietArrowWhileSkating: false
+    setupPanel: false
+    sideClearanceCm: false
+    stanceCard: false
+    stanceCardAheadCm: false
+    stanceCardHeightCm: false
+    testState: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - cameraObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      drill: !<MappingBased.AssignableType_1> 00000000-0000-0000-0000-000000000000
+      ghost: !<MappingBased.AssignableType_2> 00000000-0000-0000-0000-000000000000
+      floor: !<MappingBased.AssignableType_3> 00000000-0000-0000-0000-000000000000
+      setupPanel: !<MappingBased.AssignableType_4> 00000000-0000-0000-0000-000000000000
+      stanceCard: !<MappingBased.AssignableType_5> 00000000-0000-0000-0000-000000000000
+      cue: !<MappingBased.AssignableType_6> 00000000-0000-0000-0000-000000000000
+      finishCard: !<MappingBased.AssignableType_7> 00000000-0000-0000-0000-000000000000
+      edgeArrow: !<MappingBased.AssignableType_8> 00000000-0000-0000-0000-000000000000
+      testState: !<MappingBased.AssignableType_9> 00000000-0000-0000-0000-000000000000
+      defaultSpacingM: !<float> 1.000000
+      padSizeCm: !<float> 100.000000
+      padToFirstConeCm: !<float> 150.000000
+      finishPastLastConeCm: !<float> 100.000000
+      pathSwingCm: !<float> 50.000000
+      sideClearanceCm: !<float> 8.000000
+      driftDistanceCm: !<float> 150.000000
+      driftHoldSec: !<float> 2.000000
+      driftPulseSec: 0.800000
+      farFromDrillCm: !<float> 500.000000
+      quietArrowWhileSkating: true
+      entryCue: Eyes up
+      middleCue: Bend knees
+      exitCue: Arms forward
+      backToLineCue: Back to line
+      cueAheadCm: !<float> 250.000000
+      cueHeightCm: !<float> 120.000000
+      cueSideOffsetCm: !<float> 40.000000
+      eyeHeightCm: !<float> 160.000000
+      ghostAheadCm: !<float> 200.000000
+      finishCardDistanceCm: !<float> 70.000000
+      finishCardDropCm: !<float> 10.000000
+      stanceCardAheadCm: !<float> 100.000000
+      stanceCardHeightCm: !<float> 130.000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">SlalomCoachMain - runs the drill flow</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"References"}'
+    - '// @input SceneObject cameraObject {"hint":"The Camera Object. Its world position stands for the skater"}'
+    - '// @input AssignableType_1 drill {"hint":"The placed drill"}'
+    - '// @input AssignableType_2 ghost {"hint":"The faint ghost drill shown before placing"}'
+    - '// @input AssignableType_3 floor {"hint":"Stand-in floor for the preview"}'
+    - '// @input AssignableType_4 setupPanel {"hint":"Setup panel"}'
+    - '// @input AssignableType_5 stanceCard {"hint":"Stance card"}'
+    - '// @input AssignableType_6 cue {"hint":"Cue text"}'
+    - '// @input AssignableType_7 finishCard {"hint":"Finish card"}'
+    - '// @input AssignableType_8 edgeArrow {"hint":"Edge arrow under the camera"}'
+    - '// @input AssignableType_9 testState {"hint":"Readable state for tests"}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Drill layout"}'
+    - '// @input float defaultSpacingM = 1 {"hint":"Cone spacing at launch, in metres. The setup slider changes it afterwards", "widget":"slider", "min":0.8, "max":1.5, "step":0.1}'
+    - '// @input float padSizeCm = 100 {"hint":"Start pad width and depth, in cm", "widget":"slider", "min":50, "max":200, "step":5}'
+    - '// @input float padToFirstConeCm = 150 {"hint":"Distance from the pad centre to cone 1, in cm", "widget":"slider", "min":80, "max":300, "step":5}'
+    - '// @input float finishPastLastConeCm = 100 {"hint":"Distance from cone 6 to the finish line, in cm", "widget":"slider", "min":50, "max":300, "step":5}'
+    - '// @input float pathSwingCm = 50 {"hint":"How far the path swings to each side of the cone line, in cm", "widget":"slider", "min":20, "max":100, "step":5}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Run rules"}'
+    - "// @input float sideClearanceCm = 8 {\"hint\":\"How far past the cone's centre line counts as being on its correct side, in cm\", \"widget\":\"slider\", \"min\":0, \"max\":40, \"step\":1}"
+    - '// @input float driftDistanceCm = 150 {"hint":"Distance from the path line that counts as drifting, in cm", "widget":"slider", "min":50, "max":400, "step":10}'
+    - '// @input float driftHoldSec = 2 {"hint":"Seconds off the line before the Back to line cue", "widget":"slider", "min":0.5, "max":6, "step":0.1}'
+    - '// @input float driftPulseSec = 0.8 {"hint":"Seconds the path line stays bright after drifting away", "widget":"slider", "min":0.2, "max":3, "step":0.1}'
+    - '// @input float farFromDrillCm = 500 {"hint":"Beyond this distance from the drill, the arrow points to the start pad, in cm", "widget":"slider", "min":200, "max":1500, "step":50}'
+    - "// @input bool quietArrowWhileSkating = true {\"hint\":\"Keep the arrow quiet while skating forward along the drill, when the next pole is simply just ahead or below the narrow view. Off shows it whenever the target is outside the view's width\"}"
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Cue wording and placement"}'
+    - '// @input string entryCue = "Eyes up" {"hint":"Cue on leaving the start pad"}'
+    - '// @input string middleCue = "Bend knees" {"hint":"Cue on reaching cone 2"}'
+    - '// @input string exitCue = "Arms forward" {"hint":"Cue on reaching cone 5"}'
+    - '// @input string backToLineCue = "Back to line" {"hint":"Cue after staying off the path line"}'
+    - '// @input float cueAheadCm = 250 {"hint":"How far ahead of the skater along the drill the cue appears, in cm", "widget":"slider", "min":100, "max":400, "step":10}'
+    - '// @input float cueHeightCm = 120 {"hint":"Cue height above the floor, in cm", "widget":"slider", "min":60, "max":200, "step":5}'
+    - '// @input float cueSideOffsetCm = 40 {"hint":"Sideways offset from the path line, in cm", "widget":"slider", "min":0, "max":120, "step":5}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Surface placement"}'
+    - '// @input float eyeHeightCm = 160 {"hint":"Estimated eye height, used to find the floor. The Lens does not sense the real ground", "widget":"slider", "min":120, "max":200, "step":1}'
+    - "// @input float ghostAheadCm = 200 {\"hint\":\"Distance from the skater to the ghost's start pad, in cm\", \"widget\":\"slider\", \"min\":100, \"max\":400, \"step\":10}"
+    - '// @input float finishCardDistanceCm = 70 {"hint":"Finish card distance, in cm", "widget":"slider", "min":40, "max":110, "step":5}'
+    - '// @input float finishCardDropCm = 10 {"hint":"How far below eye level the finish card floats, in cm", "widget":"slider", "min":0, "max":40, "step":1}'
+    - '// @input float stanceCardAheadCm = 100 {"hint":"Stance card distance from the pad centre along the drill, in cm", "widget":"slider", "min":50, "max":200, "step":5}'
+    - '// @input float stanceCardHeightCm = 147 {"hint":"Stance card centre height above the floor, in cm", "widget":"slider", "min":80, "max":180, "step":5}'
+    - '// @ui {"widget":"group_end"}'

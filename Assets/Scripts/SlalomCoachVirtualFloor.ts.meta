@@ -1,0 +1,62 @@
+- !<AssetImportMetadata/538dad38-f5ec-468c-867b-bf4e86c735c4>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 3120e68d-b94a-4ae5-bd06-9bc29420ed6c
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 3120e68d-b94a-4ae5-bd06-9bc29420ed6c
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 2f02c63b-7db6-454e-a686-e5c32e9d143e
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/2f02c63b-7db6-454e-a686-e5c32e9d143e>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: 2ebe4241-21f5-4bc9-b9ef-3a2d20a7b0c2
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    floorColor: false
+    floorSizeCm: false
+    gridColor: false
+    gridStepCm: false
+    hideOnDevice: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - floorSizeCm: !<float> 6000.000000
+      gridStepCm: !<float> 100.000000
+      hideOnDevice: true
+      floorColor: !<Vec3> {x: 0.090000, y: 0.110000, z: 0.140000}
+      gridColor: !<Vec3> {x: 0.240000, y: 0.290000, z: 0.340000}
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">SlalomCoachVirtualFloor - stand-in for the parking lot</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Settings"}'
+    - '// @input float floorSizeCm = 6000 {"hint":"Width and depth of the floor in cm", "widget":"slider", "min":1000, "max":10000, "step":100}'
+    - '// @input float gridStepCm = 100 {"hint":"Grid line spacing in cm", "widget":"slider", "min":25, "max":500, "step":25}'
+    - '// @input bool hideOnDevice = true {"hint":"Hide the stand-in floor outside the Lens Studio preview"}'
+    - '// @input vec3 floorColor = "{0.09,0.11,0.14}" {"hint":"Floor colour. The display is additive, so this stays faint on glasses", "widget":"color"}'
+    - '// @input vec3 gridColor = "{0.24,0.29,0.34}" {"hint":"Grid line colour", "widget":"color"}'
+    - '// @ui {"widget":"group_end"}'

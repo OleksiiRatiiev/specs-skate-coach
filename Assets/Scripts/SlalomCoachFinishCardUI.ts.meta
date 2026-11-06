@@ -1,0 +1,59 @@
+- !<AssetImportMetadata/412ad2ca-a06c-4b3c-994f-54bf1263ff4b>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 32c977ec-aa0f-44ac-ae0a-4a4149229eef
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 32c977ec-aa0f-44ac-ae0a-4a4149229eef
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 029e24d3-afa1-46a6-b470-03437539ffaa
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/029e24d3-afa1-46a6-b470-03437539ffaa>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: b773c24d-ff3a-45f4-8d05-a9a1f799de46
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    buttonHeightCm: false
+    buttonWidthCm: false
+    scoreCaption: false
+    viewingDistanceCm: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - scoreCaption: cones cleared
+      viewingDistanceCm: !<float> 70.000000
+      buttonWidthCm: 10.500000
+      buttonHeightCm: !<float> 6.000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">SlalomCoachFinishCardUI - end of run result</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Settings"}'
+    - '// @input string scoreCaption = "cones cleared" {"hint":"Caption under the score"}'
+    - '// @input float viewingDistanceCm = 70 {"hint":"Viewing distance the text is scaled for, in cm", "widget":"slider", "min":40, "max":110, "step":5}'
+    - '// @input float buttonWidthCm = 10.5 {"hint":"Width of each button in cm", "widget":"slider", "min":6, "max":16, "step":0.5}'
+    - '// @input float buttonHeightCm = 6 {"hint":"Height of each button in cm", "widget":"slider", "min":3, "max":10, "step":0.5}'
+    - '// @ui {"widget":"group_end"}'

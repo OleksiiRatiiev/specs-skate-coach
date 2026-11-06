@@ -1,0 +1,50 @@
+- !<AssetImportMetadata/45633e1e-bb3f-4b44-a007-b1c28b7e76bb>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 15fc1523-e3b9-45ca-92d0-bf350c944905
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 15fc1523-e3b9-45ca-92d0-bf350c944905
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 73fd3ff4-b10e-4f54-97d6-0318b57a4a3a
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/73fd3ff4-b10e-4f54-97d6-0318b57a4a3a>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: bb6b9ba8-38da-48a6-abb9-59813dedb486
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    logChanges: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - logChanges: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">SlalomCoachTestState - readable state for tests</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Debug"}'
+    - '// @input bool logChanges {"hint":"Print each change of run phase, cone result and cue to the Logger"}'
+    - '// @ui {"widget":"group_end"}'

@@ -1,0 +1,59 @@
+- !<AssetImportMetadata/edd7c2c1-7fc1-463d-ae27-d962fb09b7f1>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> a28343a8-d86f-49f5-a6c9-05981cde668d
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> a28343a8-d86f-49f5-a6c9-05981cde668d
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 034cda95-b926-48ba-b0df-05e0cda3d16b
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/034cda95-b926-48ba-b0df-05e0cda3d16b>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: 4a35eaae-184d-49fa-9395-8fa8c0074006
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    color: false
+    distanceCm: false
+    edgeFraction: false
+    sizeCm: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - distanceCm: !<float> 100.000000
+      sizeCm: 4.500000
+      edgeFraction: 0.780000
+      color: !<Vec3> {x: 0.750000, y: 1.000000, z: 1.000000}
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">SlalomCoachEdgeArrow - points at what is out of view</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Settings"}'
+    - '// @input float distanceCm = 100 {"hint":"Distance in front of the eyes in cm", "widget":"slider", "min":60, "max":200, "step":5}'
+    - '// @input float sizeCm = 4.5 {"hint":"Arrow length in cm at that distance", "widget":"slider", "min":2, "max":10, "step":0.5}'
+    - '// @input float edgeFraction = 0.78 {"hint":"How far towards the lower edge of the view to sit. 1 is exactly on the edge", "widget":"slider", "min":0.3, "max":1, "step":0.05}'
+    - '// @input vec3 color = "{0.75,1,1}" {"hint":"Arrow colour. Keep it light, because dark colours vanish on the additive display", "widget":"color"}'
+    - '// @ui {"widget":"group_end"}'

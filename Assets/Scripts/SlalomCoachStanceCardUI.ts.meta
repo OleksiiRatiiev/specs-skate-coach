@@ -1,0 +1,65 @@
+- !<AssetImportMetadata/a1438c3b-a83a-4eb6-a9e7-db1f2e3cb99d>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 5f85c611-7d21-4a06-b46f-c1f1e82dfa46
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 5f85c611-7d21-4a06-b46f-c1f1e82dfa46
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> bf4d3c12-cbb6-4abd-8689-530d083db31d
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/bf4d3c12-cbb6-4abd-8689-530d083db31d>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: ace7e654-1531-4547-8634-77d3ec4bd255
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    cardColor: false
+    cardHeightCm: false
+    lineOne: false
+    lineThree: false
+    lineTwo: false
+    textDistanceCm: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - lineOne: Knees bent
+      lineTwo: Arms forward
+      lineThree: Eyes 2–3 cones ahead
+      cardHeightCm: !<float> 40.000000
+      textDistanceCm: !<float> 130.000000
+      cardColor: !<Vec3> {x: 0.850000, y: 0.970000, z: 1.000000}
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">SlalomCoachStanceCardUI - stance reminder on the pad</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Settings"}'
+    - '// @input string lineOne = "Knees bent" {"hint":"First reminder"}'
+    - '// @input string lineTwo = "Arms forward" {"hint":"Second reminder"}'
+    - '// @input string lineThree = "Eyes 2–3 cones ahead" {"hint":"Third reminder"}'
+    - '// @input float cardHeightCm = 40 {"hint":"Card height in cm", "widget":"slider", "min":25, "max":70, "step":1}'
+    - '// @input float textDistanceCm = 130 {"hint":"Viewing distance the text is scaled for, in cm. Larger makes the text bigger", "widget":"slider", "min":60, "max":220, "step":5}'
+    - '// @input vec3 cardColor = "{0.85,0.97,1}" {"hint":"Colour of the figure and text. Keep it light for the additive display", "widget":"color"}'
+    - '// @ui {"widget":"group_end"}'

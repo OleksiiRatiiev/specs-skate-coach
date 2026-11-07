@@ -14,16 +14,19 @@ import {SlalomCoachDrillView} from "./SlalomCoachDrillView"
 import {SlalomCoachEdgeArrow} from "./SlalomCoachEdgeArrow"
 import {SlalomCoachCueUI} from "./SlalomCoachCueUI"
 import {SlalomCoachFinishCardUI} from "./SlalomCoachFinishCardUI"
-import {CueId, RunEvent, SlalomCoachRunLogic} from "./SlalomCoachRunLogic"
-import {AMBER, CYAN, addNeonText} from "./SlalomCoachNeon"
+import {CueId, RunEvent, SlalomCoachRunLogic, cueConeIndexes} from "./SlalomCoachRunLogic"
+import {AMBER, CYAN, NeonButton, addNeonText} from "./SlalomCoachNeon"
 import {COUNT_DEFAULT, COUNT_MAX, COUNT_MIN, SlalomCoachSetupPanelUI} from "./SlalomCoachSetupPanelUI"
 import {SlalomCoachShards} from "./SlalomCoachShards"
 import {SlalomCoachStanceCardUI} from "./SlalomCoachStanceCardUI"
 import {SlalomCoachSnapshot, SlalomCoachTestState} from "./SlalomCoachTestState"
 import {SlalomCoachVirtualFloor} from "./SlalomCoachVirtualFloor"
 
-const STRIP_HEIGHT_CM = 90
-const STRIP_TILT_BACK_RAD = (30 * Math.PI) / 180
+const STRIP_HEIGHT_CM = 25
+const STRIP_TILT_BACK_RAD = (55 * Math.PI) / 180
+const STRIP_SCALE = 1.15
+const CHANGE_BUTTON_W = 17
+const CHANGE_BUTTON_H = 4.6
 const STEP_HINT_HEIGHT_CM = 110
 const STEP_HINT_TEXT = "STEP ONTO THE PAD"
 const WAVE_STEP_SEC = 0.2
@@ -152,15 +155,11 @@ export class SlalomCoachMain extends BaseScriptComponent {
   @ui.separator
   @ui.group_start("Cue wording and placement")
   @input
-  @hint("Cue on leaving the start pad")
-  entryCue: string = "Eyes up"
-
-  @input
-  @hint("Cue on reaching cone 2")
+  @hint("Cue above cone ceil(N/2)+1")
   middleCue: string = "Bend knees"
 
   @input
-  @hint("Cue on reaching cone 5")
+  @hint("Cue above the last cone")
   exitCue: string = "Arms forward"
 
   @input
@@ -168,7 +167,7 @@ export class SlalomCoachMain extends BaseScriptComponent {
   backToLineCue: string = "Back to line"
 
   @input
-  @hint("How far ahead of the skater along the drill the cue appears, in cm")
+  @hint("Back to line cue: how far ahead of the skater along the drill it appears, in cm")
   @widget(new SliderWidget(100, 400, 10))
   cueAheadCm: number = 250
 
@@ -181,6 +180,16 @@ export class SlalomCoachMain extends BaseScriptComponent {
   @hint("Sideways offset from the path line, in cm")
   @widget(new SliderWidget(0, 120, 5))
   cueSideOffsetCm: number = 40
+
+  @input
+  @hint("Cone cues (Bend knees, Arms forward): height above the floor, in cm")
+  @widget(new SliderWidget(80, 200, 5))
+  coneCueHeightCm: number = 130
+
+  @input
+  @hint("Cone cues: sideways distance from the path line, in cm")
+  @widget(new SliderWidget(0, 120, 5))
+  coneCueSideCm: number = 50
   @ui.group_end
 
   @ui.separator
@@ -206,14 +215,14 @@ export class SlalomCoachMain extends BaseScriptComponent {
   finishCardDropCm: number = 15
 
   @input
-  @hint("Stance card distance from the pad centre along the drill, in cm")
-  @widget(new SliderWidget(50, 200, 5))
-  stanceCardAheadCm: number = 100
+  @hint("Stance card distance to the left of the pad centre, in cm")
+  @widget(new SliderWidget(40, 150, 5))
+  stanceCardLeftCm: number = 70
 
   @input
   @hint("Stance card centre height above the floor, in cm")
   @widget(new SliderWidget(80, 180, 5))
-  stanceCardHeightCm: number = 147
+  stanceCardFloorHeightCm: number = 120
   @ui.group_end
 
   private camera: Camera
@@ -243,6 +252,10 @@ export class SlalomCoachMain extends BaseScriptComponent {
   private stepHint: Text | null = null
   private celebrated = false
   private missPulsed = false
+  private anchoredCue: "" | "middle" | "exit" = ""
+  private changeButton: NeonButton | null = null
+  private changeButtonWanted = false
+  private frames = 0
 
   onAwake(): void {
     this.createEvent("OnStartEvent").bind(() => this.start())
@@ -297,6 +310,7 @@ export class SlalomCoachMain extends BaseScriptComponent {
     this.ghost.setVisible(false)
     this.setupPanel.setVisible(false)
     this.placeStanceCard()
+    this.placeChangeButton()
     this.celebrated = false
     this.missPulsed = false
     this.drill.clearEffects()
@@ -323,16 +337,18 @@ export class SlalomCoachMain extends BaseScriptComponent {
     this.testState.log("again")
   }
 
-  /** Same action as pinching "Move drill". Brings back the setup panel and the ghost. */
-  moveDrill(): void {
+  /** Same action as pinching "Change drill". Brings back the setup panel and the ghost. */
+  changeDrill(): void {
     this.logic = null
     this.drill.clearEffects()
     this.shards?.stop()
     this.hideStepHint()
     this.drill.setVisible(false)
     this.cue.clear()
+    this.anchoredCue = ""
     this.finishCard.setVisible(false)
     this.stanceCard.setVisible(false)
+    this.setChangeButtonVisible(false)
     this.edgeArrow.hide()
     this.arrowTarget = "none"
     this.setupPanel.setVisible(true)
@@ -340,7 +356,7 @@ export class SlalomCoachMain extends BaseScriptComponent {
     this.setupPanel.setCount(this.coneCount)
     this.setupPanel.setSpacing(this.spacingM)
     this.rebuildGhost()
-    this.testState.log("move drill")
+    this.testState.log("change drill")
   }
 
   private start(): void {
@@ -351,7 +367,9 @@ export class SlalomCoachMain extends BaseScriptComponent {
     this.setupPanel.onCountChanged.add((n) => this.setCount(n))
     this.setupPanel.onPlaceDrill.add(() => this.placeDrill())
     this.finishCard.onAgain.add(() => this.again())
-    this.finishCard.onMoveDrill.add(() => this.moveDrill())
+    this.finishCard.onChangeDrill.add(() => this.changeDrill())
+    this.setupPanel.getSceneObject().getTransform().setLocalScale(new vec3(STRIP_SCALE, STRIP_SCALE, STRIP_SCALE))
+    this.buildChangeButton()
 
     this.drill.setVisible(false)
     this.stanceCard.setVisible(false)
@@ -372,7 +390,34 @@ export class SlalomCoachMain extends BaseScriptComponent {
     this.createEvent("LateUpdateEvent").bind(() => this.tick(getDeltaTime()))
   }
 
+  /** Small neon CHANGE DRILL button on the pad's near edge, tilted like the strip. */
+  private buildChangeButton(): void {
+    const root = global.scene.createSceneObject("ChangeDrillPadRoot")
+    root.setParent(this.getSceneObject())
+    this.changeButton = new NeonButton(root, "PadChangeDrillButton", "CHANGE DRILL", CHANGE_BUTTON_W, CHANGE_BUTTON_H, vec3.zero(), {
+      style: "cyan",
+      weight: "SemiBold",
+      capCm: 1.25,
+      spacing: 0.1,
+    })
+    this.changeButton.onPress.add(() => this.changeDrill())
+  }
+
+  /** Shown whenever a run isn't in progress once the drill is placed. UI Kit needs a frame or two enabled to start. */
+  private setChangeButtonVisible(visible: boolean): void {
+    this.changeButtonWanted = visible
+    this.applyChangeButtonVisibility()
+  }
+
+  private applyChangeButtonVisibility(): void {
+    if (this.changeButton && this.frames >= 3) {
+      this.changeButton.object.getParent().enabled = this.changeButtonWanted
+    }
+  }
+
   private tick(dt: number): void {
+    this.frames++
+    this.applyChangeButtonVisibility()
     const eye = this.cameraTransform.getWorldPosition()
     const heading = this.currentHeading()
 
@@ -398,9 +443,10 @@ export class SlalomCoachMain extends BaseScriptComponent {
       transform.setWorldPosition(origin)
       const yawRotation = quat.angleAxis(Math.atan2(-heading.x, -heading.z), vec3.up())
       transform.setWorldRotation(yawRotation)
-      // The setup strip rides on the start pad: centred on it, 90 cm up, tilted back to face the wearer.
+      // The setup strip lies on the pad's near half, 25 cm up, tilted back 55 degrees from vertical towards the wearer.
       const strip = this.setupPanel.getSceneObject().getTransform()
-      strip.setWorldPosition(new vec3(origin.x, origin.y + STRIP_HEIGHT_CM, origin.z))
+      const nearHalf = -this.padSizeCm / 4
+      strip.setWorldPosition(new vec3(origin.x + heading.x * nearHalf, origin.y + STRIP_HEIGHT_CM, origin.z + heading.z * nearHalf))
       strip.setWorldRotation(yawRotation.multiply(quat.angleAxis(-STRIP_TILT_BACK_RAD, vec3.right())))
     }
   }
@@ -440,6 +486,8 @@ export class SlalomCoachMain extends BaseScriptComponent {
     }
 
     this.stanceCard.setVisible(this.logic.onPad)
+    this.setChangeButtonVisible(this.logic.phase !== "Running")
+    this.updateAnchoredCue(eye)
     this.updateStepHint(eye)
     this.drill.tickEffects(dt)
     this.shards?.tick(dt)
@@ -520,8 +568,48 @@ export class SlalomCoachMain extends BaseScriptComponent {
     this.drill.setPathGlow(0)
     this.pathGlowTimer = 0
     this.cue.clear()
+    this.anchoredCue = ""
     this.finishCard.setVisible(false)
     this.appliedHighlight = -2
+  }
+
+  /**
+   * "Bend knees" floats above cone ceil(N/2)+1 and "Arms forward" above cone N. Each is visible from
+   * the moment the skater has passed the cone two before it until its own cone is passed. A newer cue
+   * replaces an older one.
+   */
+  private updateAnchoredCue(eye: vec3): void {
+    const passed = this.logic.nextConeIndex
+    const cones = cueConeIndexes(this.layout.coneS.length)
+    let want: "" | "middle" | "exit" = ""
+    if (this.logic.phase === "Running") {
+      if (passed >= cones.exit - 1 && passed <= cones.exit) {
+        want = "exit"
+      } else if (passed >= cones.middle - 1 && passed <= cones.middle) {
+        want = "middle"
+      }
+    }
+    if (want === this.anchoredCue) {
+      return
+    }
+    const previousText = this.anchoredCue === "exit" ? this.exitCue : this.middleCue
+    this.anchoredCue = want
+    if (want === "") {
+      if (this.cue.getCueText() === previousText) {
+        this.cue.hide()
+      }
+      return
+    }
+    const index = want === "exit" ? cones.exit : cones.middle
+    const station = this.layout.coneS[index]
+    const pathT = this.layout.pathLateralAt(station)
+    const lateral = pathT - (pathT >= 0 ? 1 : -1) * this.coneCueSideCm
+    const position = this.drillPoint(station, lateral, this.coneCueHeightCm)
+    const toEye = new vec3(eye.x - position.x, 0, eye.z - position.z)
+    const rotation = toEye.length > 0.001 ? quat.lookAt(toEye.normalize(), vec3.up()) : quat.quatIdentity()
+    const text = want === "exit" ? this.exitCue : this.middleCue
+    this.cue.showCue(text, position, rotation, true)
+    this.testState.log(`cue ${text}`)
   }
 
   private showCue(cue: CueId, s: number, t: number, eye: vec3, heading: vec3): void {
@@ -543,12 +631,6 @@ export class SlalomCoachMain extends BaseScriptComponent {
 
   private cueString(cue: CueId): string {
     switch (cue) {
-      case "entry":
-        return this.entryCue
-      case "middle":
-        return this.middleCue
-      case "exit":
-        return this.exitCue
       case "backToLine":
         return this.backToLineCue
     }
@@ -616,11 +698,22 @@ export class SlalomCoachMain extends BaseScriptComponent {
     return facingUpDrill && s < this.layout.coneS[index] && Math.abs(t) <= this.driftDistanceCm
   }
 
+  /** On the pad's near edge, 25 cm up, tilted back like the strip. */
+  private placeChangeButton(): void {
+    if (!this.changeButton) {
+      return
+    }
+    const transform = this.changeButton.object.getParent().getTransform()
+    transform.setWorldPosition(this.drillPoint(-this.padSizeCm / 2, 0, STRIP_HEIGHT_CM))
+    const yaw = quat.angleAxis(this.drillYaw, vec3.up())
+    transform.setWorldRotation(yaw.multiply(quat.angleAxis(-STRIP_TILT_BACK_RAD, vec3.right())))
+  }
+
   private placeStanceCard(): void {
     const transform = this.stanceCard.getSceneObject().getTransform()
-    transform.setWorldPosition(this.drillPoint(this.stanceCardAheadCm, 0, this.stanceCardHeightCm))
-    // Facing back along the drill, towards the pad.
-    transform.setWorldRotation(quat.lookAt(this.drillForward.uniformScale(-1), vec3.up()))
+    transform.setWorldPosition(this.drillPoint(0, -this.stanceCardLeftCm, this.stanceCardFloorHeightCm))
+    // To the left of the pad, facing across to its centre.
+    transform.setWorldRotation(quat.lookAt(this.drillRight, vec3.up()))
   }
 
   private drillPoint(s: number, t: number, heightAboveFloor: number): vec3 {

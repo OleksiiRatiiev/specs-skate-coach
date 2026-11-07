@@ -506,22 +506,12 @@
   Enabled: true
   ScriptAsset: !<reference> 5f85c611-7d21-4a06-b46f-c1f1e82dfa46
   ScriptInputsDefault:
-    lineOne: true
-    lineTwo: true
-    lineThree: true
-    cardHeightCm: true
-    textDistanceCm: true
-    cardColor: true
+    {}
   ScriptTypesDefault:
     {}
   ScriptInputs:
     "":
-      lineOne: Knees bent
-      lineTwo: Arms forward
-      lineThree: Eyes 2–3 cones ahead
-      cardHeightCm: !<float> 40.000000
-      textDistanceCm: !<float> 130.000000
-      cardColor: !<Vec3> {x: 0.850000, y: 0.970000, z: 1.000000}
+      {}
   ScriptTypes:
     "":
       {}
@@ -820,16 +810,18 @@
     driftPulseSec: true
     farFromDrillCm: true
     quietArrowWhileSkating: true
-    entryCue: true
     middleCue: true
     exitCue: true
     backToLineCue: true
     cueAheadCm: true
     cueHeightCm: true
     cueSideOffsetCm: true
+    coneCueHeightCm: true
+    coneCueSideCm: true
     eyeHeightCm: true
     ghostAheadCm: true
-    stanceCardAheadCm: true
+    stanceCardLeftCm: true
+    stanceCardFloorHeightCm: true
   ScriptTypesDefault:
     {}
   ScriptInputs:
@@ -855,19 +847,20 @@
       driftPulseSec: 0.800000
       farFromDrillCm: !<float> 500.000000
       quietArrowWhileSkating: true
-      entryCue: Eyes up
       middleCue: Bend knees
       exitCue: Arms forward
       backToLineCue: Back to line
       cueAheadCm: !<float> 250.000000
       cueHeightCm: !<float> 120.000000
       cueSideOffsetCm: !<float> 40.000000
+      coneCueHeightCm: !<float> 130.000000
+      coneCueSideCm: !<float> 50.000000
       eyeHeightCm: !<float> 160.000000
       ghostAheadCm: !<float> 200.000000
       finishCardDistanceCm: !<float> 80.000000
       finishCardDropCm: !<float> 15.000000
-      stanceCardAheadCm: !<float> 100.000000
-      stanceCardHeightCm: !<float> 147.000000
+      stanceCardLeftCm: !<float> 70.000000
+      stanceCardFloorHeightCm: !<float> 120.000000
   ScriptTypes:
     "":
       {}

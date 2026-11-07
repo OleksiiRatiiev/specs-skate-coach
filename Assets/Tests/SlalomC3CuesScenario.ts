@@ -1,6 +1,6 @@
 /**
  * Criterion 3, One cue at a time. Walks a clean weave and samples every frame. Parameter "speed" is
- * cm/s: at the slow default each cue can fade by itself, while at the fast one cues replace each other.
+ * cm/s. The cues are anchored to their cones and follow the skater's position, not a timer.
  * Compares the Lens's cue state with what the real Text components are showing, on every frame.
  */
 
@@ -13,6 +13,7 @@ interface CueSpan {
   text: string
   startTime: number
   startStation: number
+  endStation: number
   endTime: number
   fadedTime: number
   position: vec3
@@ -25,12 +26,12 @@ interface CueSpan {
 export class SlalomC3CuesScenario extends Scenario {
   async run(config?: ScenarioConfig): Promise<void> {
     const speed = parseFloat((config && config.get("speed")) || "60")
-    const slow = speed <= 80
     const N = parseInt((config && config.get("cones")) || "6", 10)
-    // Phases: Middle from cone ceil(N/3)+1, Exit from cone ceil(2N/3)+1. Each cue shows 2 cones early,
-    // when the skater passes the cone two before its phase starts (0-based index = start - 3).
-    const middleIndex = Math.max(0, Math.ceil(N / 3) + 1 - 3)
-    const exitIndex = Math.max(0, Math.ceil((2 * N) / 3) + 1 - 3)
+    // Cone-anchored cues (cone numbers 1-based): "Bend knees" above cone ceil(N/2)+1, "Arms forward" above cone N.
+    // Each shows once the skater has passed the cone two before its own, and hides once its own cone is passed.
+    // A newer cue replaces an older one. 0-based cone indexes:
+    const middleIndex = Math.ceil(N / 2)
+    const exitIndex = N - 1
     const c = new Checks(`c3_cues_${speed}_${N}cones`)
     await waitForLens()
     const rig = new SkaterRig(this, config)
@@ -39,6 +40,8 @@ export class SlalomC3CuesScenario extends Scenario {
     c.info("pinch mode", pincher.mode)
 
     const placed = await placeWithPinches(pincher, config, 1.0, N)
+    // The strip sits low on the floor, so setup looks down at it. Skating looks ahead.
+    rig.setLookDownDeg(5)
     await stepOntoPad(rig)
     const onPad = snap()
     c.ok("on the pad: no cue yet", onPad.cueCount === 0 && onPad.cueDisplayedText === "", `count=${onPad.cueCount} text='${onPad.cueDisplayedText}'`)
@@ -132,12 +135,14 @@ export class SlalomC3CuesScenario extends Scenario {
       if (state.cueText !== previousCue) {
         if (current && previousCue !== "") {
           current.endTime = now
+          current.endStation = state.skaterStationCm
         }
         if (state.cueText !== "") {
           current = {
             text: state.cueText,
             startTime: now,
             startStation: state.skaterStationCm,
+            endStation: -1,
             endTime: -1,
             fadedTime: -1,
             position: state.cueWorldPosition ? v3(state.cueWorldPosition) : vec3.zero(),
@@ -205,15 +210,17 @@ export class SlalomC3CuesScenario extends Scenario {
         const forward = v3(state.drillForward)
         const right = v3(state.drillRight)
         const offset = position.sub(pad)
-        const ahead = offset.dot(forward) - span.startStation
         const height = position.y - state.floorY
-        const pathT = placed.weave(offset.dot(forward))
+        const index = span.text === "Arms forward" ? exitIndex : middleIndex
+        const along = offset.dot(forward)
+        const pathT = placed.weave(placed.stations[index])
         const side = Math.abs(offset.dot(right) - pathT)
         const view = rig.viewOf(position)
-        placementChecks.push(`${span.text}: aheadOfTrigger=${fmt(ahead)} aheadNow=${fmt(offset.dot(forward) - state.skaterStationCm)} height=${fmt(height)} offPath=${fmt(side)} screen=(${fmt(view.x)},${fmt(view.y)}) inView=${view.inView}`)
-        c.between(`${span.text}: about 2 to 3 m ahead of where it was triggered`, ahead, 190, 310)
-        c.between(`${span.text}: about 1.2 m above the floor`, height, 110, 130)
-        c.between(`${span.text}: offset to the side of the path, cm`, side, 10, 90)
+        placementChecks.push(`${span.text}: alongDrill=${fmt(along)} coneAt=${fmt(placed.stations[index])} height=${fmt(height)} offPath=${fmt(side)} screen=(${fmt(view.x)},${fmt(view.y)}) inView=${view.inView}`)
+        c.near(`${span.text}: floats above cone ${index + 1}, cm along the drill`, along, placed.stations[index], 1)
+        c.between(`${span.text}: about 1.3 m above the floor`, height, 120, 140)
+        c.between(`${span.text}: about 50 cm to the side of the path, cm`, side, 40, 60)
+        c.info(`${span.text}: view diagnostics`, `eye=${fmtV(rig.actualEye())} cue=${fmtV(position)} pitchDown=${fmt(rig.pitchDownDeg())} station=${fmt(state.skaterStationCm)} dist=${fmt(position.distance(rig.actualEye()))}`)
         c.ok(`${span.text}: inside the view when it appears`, view.inView, `screen=(${fmt(view.x)},${fmt(view.y)})`)
         measuredPlacement = true
       }
@@ -232,31 +239,26 @@ export class SlalomC3CuesScenario extends Scenario {
     c.ok("walk covered the drill", frameCount > 30 && measuredPlacement, `frames=${frameCount}`)
 
     const order = spans.map((s) => s.text)
-    c.ok("cue order is Eyes up, Bend knees, Arms forward", JSON.stringify(order) === JSON.stringify(["Eyes up", "Bend knees", "Arms forward"]), JSON.stringify(order))
-    if (spans.length === 3) {
-      c.between("Eyes up shows on leaving the pad, at station", spans[0].startStation, 50, 70)
+    c.ok("no Eyes up cue while riding (it lives on the stance card)", order.indexOf("Eyes up") < 0, JSON.stringify(order))
+    c.ok("cue order is Bend knees, Arms forward", JSON.stringify(order) === JSON.stringify(["Bend knees", "Arms forward"]), JSON.stringify(order))
+    if (spans.length === 2) {
       // A cue can only be seen on the first frame after the crossing, so it may be at most one frame's travel late.
-      c.ok(`Bend knees shows 2 cones before the Middle phase (passing cone ${middleIndex + 1}): at the line, no later than that frame's travel`, spans[1].startStation - placed.stations[middleIndex] >= 0 && spans[1].startStation - placed.stations[middleIndex] <= spans[1].travel + 1, `past=${fmt(spans[1].startStation - placed.stations[middleIndex])} frameTravel=${fmt(spans[1].travel)}`)
-      c.ok(`Arms forward shows 2 cones before the Exit phase (passing cone ${exitIndex + 1}): at the line, no later than that frame's travel`, spans[2].startStation - placed.stations[exitIndex] >= 0 && spans[2].startStation - placed.stations[exitIndex] <= spans[2].travel + 1, `past=${fmt(spans[2].startStation - placed.stations[exitIndex])} frameTravel=${fmt(spans[2].travel)}`)
+      // Appears when the cone two before its own is passed (0-based: own index - 2).
+      const kneesStart = placed.stations[middleIndex - 2]
+      const armsStart = placed.stations[exitIndex - 2]
+      c.ok(`Bend knees appears after passing cone ${middleIndex - 1}, 2 cones before cone ${middleIndex + 1}: at the line, no later than that frame's travel`, spans[0].startStation - kneesStart >= 0 && spans[0].startStation - kneesStart <= spans[0].travel + 1, `past=${fmt(spans[0].startStation - kneesStart)} frameTravel=${fmt(spans[0].travel)}`)
+      c.ok(`Arms forward appears after passing cone ${exitIndex - 1}, 2 cones before cone ${exitIndex + 1}: at the line, no later than that frame's travel`, spans[1].startStation - armsStart >= 0 && spans[1].startStation - armsStart <= spans[1].travel + 1, `past=${fmt(spans[1].startStation - armsStart)} frameTravel=${fmt(spans[1].travel)}`)
+      // Hides once its own cone is passed, or is replaced the moment the newer cue appears.
+      const kneesEnd = Math.min(placed.stations[middleIndex], armsStart)
+      c.ok(`Bend knees hides at cone ${middleIndex + 1}, or when Arms forward replaces it`, spans[0].endStation - kneesEnd >= 0 && spans[0].endStation - kneesEnd <= spans[0].travel + 1, `end=${fmt(spans[0].endStation)} expected=${fmt(kneesEnd)}`)
+      c.ok(`Arms forward hides once cone ${exitIndex + 1} is passed`, spans[1].endStation - placed.stations[exitIndex] >= 0 && spans[1].endStation - placed.stations[exitIndex] <= spans[1].travel + 1, `end=${fmt(spans[1].endStation)} expected=${fmt(placed.stations[exitIndex])}`)
       for (const span of spans) {
         c.ok(`${span.text} really appeared`, span.placed)
         c.near(`${span.text} stays world anchored, cm moved`, span.moved, 0, 0.01)
       }
-      if (slow) {
-        spans.forEach((span, i) => {
-          // A cue stays about 3 s, unless the next cue replaces it first (Eyes up is replaced at cone 1).
-          const gap = i + 1 < spans.length ? spans[i + 1].startTime - span.startTime : 99
-          c.between(`${span.text} is active for about 3 s, or until the next cue replaces it`, span.endTime - span.startTime, Math.min(2.7, gap - 0.15), 3.6)
-          if (i === spans.length - 1) {
-            c.ok(`${span.text} has faded right out`, span.fadedTime > 0, `faded=${fmt(span.fadedTime)}`)
-            if (span.fadedTime > 0) {
-              c.between(`${span.text} gone within about 3 s plus the fade`, span.fadedTime - span.startTime, 3, 4)
-            }
-          }
-        })
-      } else {
-        c.between("Eyes up replaced early, seconds", spans[0].endTime - spans[0].startTime, 0.3, 3.6)
-      }
+      // Each cue stays up while the skater covers the two cones, not on a timer.
+      c.ok("Bend knees really was on screen", spans[0].endTime - spans[0].startTime > 0.2, `active=${fmt(spans[0].endTime - spans[0].startTime)}`)
+      c.ok("Arms forward has faded right out after its cone", spans[1].fadedTime > 0, `faded=${fmt(spans[1].fadedTime)}`)
     }
 
     c.ok("never more than one cue in state", maxCueCount <= 1, `max=${maxCueCount}`)

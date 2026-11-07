@@ -7,7 +7,7 @@ status: approved
 A drill coach for beginner inline skaters learning alone. Pick a drill, lay it on the ground, get short cues at the exact spot where you need them.
 
 ## The one spatial moment
-I'm on skates in an empty parking lot. Ahead on the ground there are 6 cones (4–12, your choice) 1 m apart and a glowing path weaving between them. As I move through the drill, a 2–3 word cue appears ("Eyes up", "Bend knees") and the next pole to pass glows brighter.
+I'm on skates in an empty parking lot. Ahead on the ground there are 6 cones (4–12, your choice) 1 m apart and a glowing path weaving between them. As I move through the drill, a 2–3 word cue appears above a cone ("Bend knees", "Arms forward") and the next pole to pass glows brighter.
 
 ## Why it belongs on glasses
 - Uses: draws in the world (cones, path and cues sit on and above the real ground) and leaves your body free (hands free, eyes forward).
@@ -19,22 +19,23 @@ I'm on skates in an empty parking lot. Ahead on the ground there are 6 cones (4�
 - Stand-in for the preview: a virtual floor stands in for the parking lot, large enough for the whole drill. Walking with the keyboard stands in for skating.
 
 ## Where things live
-- Where the user is looking during the main task: forward, 2–3 cones ahead, which is exactly the "Eyes up" habit the drill teaches. Cues never sit on the ground.
+- Where the user is looking during the main task: forward, 2–3 cones ahead, which is exactly the eyes-up habit the drill teaches. Cues never sit on the ground.
 - Drill layout: 4–12 cones (6 by default) in a line, fixed in the world on the floor. Count and spacing are set on the setup strip. Spacing is 0.8–1.5 m in 0.1 m steps, 1.0 m by default. Each cone is about 30 cm tall (default).
 - Marker poles: one thin glowing pole on each cone, about 1 m tall and about 2 cm thick (default), so the slalom line stays visible without looking down. The highlighted "next" pole is clearly brighter and thicker than the others (about twice as thick, so about 4 cm).
 - Path line: glowing, on the floor, weaving between the cones. About 10 cm wide (default), swinging about 50 cm to each side of the cone line (default). The correct side alternates, starting with cone 1 on the left (default).
 - Start pad: on the floor before cone 1, about 1 m x 1 m (default), centered about 1.5 m before cone 1 (default).
 - Finish line: a wide, bright band on the floor, about 1 m past cone 6 (default). About 30 cm deep and as wide as the start pad (about 1 m).
-- Cue text: one line of 2–3 words, floating above the path about 2–3 m ahead of me, roughly 1.2 m above the floor (a bit below eye level), offset slightly to the side of the path so it never blocks the line I'm skating. World-anchored to the path, not stuck to my head. Letters about 8–10 cm tall, plain bold neon cyan (#3FF0FF) in Chakra Petch Bold, no panel behind it, no glitch or flicker.
-- Stance card: floats about 1 m in front of the start pad, slightly below eye level, facing the pad and fixed in the world (default). About 40 cm tall (default). A simple figure plus "Knees bent", "Arms forward", "Eyes 2–3 cones ahead", in light colors with no dark background (default).
-- Setup strip: replaces the old floating setup card (no title, hint, slider, container, lazy follow or grab bar). A compact strip anchored to the ghost's start pad, centered exactly on it, about 90 cm above it and tilted back about 30° to face me. It moves with the ghost. Rows, top to bottom:
+- Cue text: one line of 2–3 words, anchored to a cone: it floats above that cone, about 1.3 m above the floor (a bit below eye level), about 50 cm to the side of the path so it never blocks the line I'm skating. World-anchored, not stuck to my head. Letters about 8–10 cm tall, plain bold neon cyan (#3FF0FF) in Chakra Petch Bold, no panel behind it, no glitch or flicker.
+- Stance card: compact (about 22 cm wide) in the neon HUD style (Chakra Petch, cyan chamfered outline, light fill), off the drill: about 70 cm to the left of the start pad's center, about 1.2 m above the floor, facing the pad and fixed in the world. No icon. Three uppercase lines: "EYES UP", "KNEES BENT", "ARMS FORWARD". No dark background.
+- Setup strip: replaces the old floating setup card (no title, hint, slider, container, lazy follow or grab bar). A compact strip anchored to the ghost's start pad, centered on the pad across and over its near half, about 25 cm above the floor and tilted back about 55° from vertical toward my eyes, so from where I stand it appears inside the pad's outline, below cone 1. Scaled up 15% from its first size. It moves with the ghost. Rows, top to bottom:
   - Row 1: "−", the cone count (4–12, default 6) with a "CONES" label, "+".
   - Row 2: "−", the spacing value (0.8–1.5 m in 0.1 m steps, default 1.0 m) with a "CONE SPACING" label, "+".
   - Below the rows, a wide cyan "PLACE DRILL" button with a slow glow pulse.
   - Values are about 5 cm tall. Every button is at least 6 cm, with hover and pressed states, and works with far-field pinch and with mouse clicks. The ghost updates live on every press.
   - After placing, the strip hides and "STEP ONTO THE PAD" shows above the pad until I step on it.
 - Ghost drill: a faint copy of the whole drill on the floor, using the strip's current count and spacing, with its start pad about 2 m ahead (default for which end), pointing the way I'm facing. Follows as I turn my head until placed. Updates live while I press the strip's buttons.
-- Finish card: floats about 70 cm in front of me (default), slightly below eye level, facing me (default). Top to bottom: a small "RUN COMPLETE" label; the headline "CLEAN RUN" (all cones cleared) or "NICE RUN"; one cone icon per cone in order (cyan cleared, amber missed); a line with the real numbers ("6/6 cones · eyes up all the way" or "5/6 cones · cone 4 is marked on the drill"); then "AGAIN" (primary, cyan, restart icon) and "MOVE DRILL" (white outline).
+- Finish card: floats about 70 cm in front of me (default), slightly below eye level, facing me (default). Top to bottom: a small "RUN COMPLETE" label; the headline "CLEAN RUN" (all cones cleared) or "NICE RUN"; one cone icon per cone in order (cyan cleared, amber missed); a line with the real numbers ("6/6 cones · eyes up all the way" or "5/6 cones · cone 4 is marked on the drill"); then "AGAIN" (primary, cyan, restart icon) and "CHANGE DRILL" (white outline).
+- Change-drill button: a small neon "CHANGE DRILL" button at the placed pad's near edge, about 25 cm above the floor and tilted back like the strip. Visible whenever a run isn't in progress (after placing, while on the pad, after the finish) and hidden while running.
 - Edge arrow: small, at the lower edge of the view. This is the one element that stays attached to the view, and only while it's needed.
 
 ## Hands and input
@@ -43,20 +44,20 @@ I'm on skates in an empty parking lot. Ahead on the ground there are 6 cones (4�
 - Place the drill: pinch the big "PLACE DRILL" button.
 - While skating: hands do nothing. No buttons, no gestures.
 - Restart mid-session: hands-free. Skating back onto the start pad resets the run.
-- At the finish: pinch the big "AGAIN" or "MOVE DRILL" button, once I've stopped. "MOVE DRILL" brings back the ghost and the strip with the last values.
+- At the finish: pinch the big "AGAIN" or "CHANGE DRILL" button, once I've stopped. "CHANGE DRILL" brings back the ghost and the strip with the last values.
+- Change the drill at any time except mid-run: pinch the small "CHANGE DRILL" button at the pad's near edge. It brings back the ghost and the strip with the last values.
 - Targets are big and highlight when aimed at.
 - Voice: none.
 
 ## When things show
-- Setup strip: shows on launch and after "MOVE DRILL" (default), hides when "PLACE DRILL" is pinched. After "MOVE DRILL" the count and spacing keep their last values. After placing, "STEP ONTO THE PAD" shows above the pad until I step on it.
+- Setup strip: shows on launch and after "CHANGE DRILL" (default), hides when "PLACE DRILL" is pinched. After "CHANGE DRILL" the count and spacing keep their last values. After placing, "STEP ONTO THE PAD" shows above the pad until I step on it.
 - Ghost drill: shows with the strip (from launch, at the strip's values), follows my view, and hides when the drill is placed.
-- Stance card: shows while I stand on the start pad, before I leave it, including when I walk back onto it (default). Hides when I leave the pad.
-- Cues: only one cue is ever on screen. Cues belong to phases of the drill, not to individual cones. With N cones (cone numbers start at 1):
-  - Entry (start pad to cone 1): "Eyes up", shows when I leave the start pad.
-  - Middle (from cone ⌈N/3⌉+1): "Bend knees", shows 2 cones before the phase starts.
-  - Exit (from cone ⌈2N/3⌉+1): "Arms forward", shows 2 cones before the phase starts.
-  - With 6 cones: Middle from cone 3 (cue at cone 1), Exit from cone 5 (cue at cone 3).
-  - A new cue replaces the old one with a quick fade, stays about 3 s, then fades out. Most of the time there's no text at all.
+- Stance card: shows while I stand on the start pad, before I leave it, including when I walk back onto it (default). Hides when I leave the pad. The "EYES UP" reminder lives here, not in the ride.
+- Cues: only one cue is ever on screen. Cues are anchored to cones, by position in the drill (N = cone count, cone numbers start at 1):
+  - "Bend knees" floats above cone ⌈N/2⌉+1; "Arms forward" floats above cone N.
+  - Each becomes visible when I'm 2 cones before its cone (i.e. once I've passed the cone two before it) and hides once I pass its own cone. A newer cue replaces an older one.
+  - With 6 cones: "Bend knees" above cone 4 (appears after cone 2), "Arms forward" above cone 6 (appears after cone 4).
+  - There is no cue near the start; "Eyes up" lives on the stance card. Most of the time there's no text at all.
 - Highlighted pole: the pole of the next cone to pass glows brighter and is thicker, and switches to the following cone once I pass. At any moment I see the path, one highlighted "next" pole, and at most one short cue.
 - Passing a cone: a cone counts as passed when I cross the line through it perpendicular to the drill. It's cleared if I'm on its correct side at that moment.
 - Missed cone: if I'm on the wrong side at that moment, the cone turns amber and stays amber for the rest of the run. The highlight moves on, so I never have to turn back. No sounds, no red X.
@@ -67,11 +68,11 @@ I'm on skates in an empty parking lot. Ahead on the ground there are 6 cones (4�
 
 ## Done criteria
 Each one can be checked in Lens Studio's preview.
-1. **Setup:** On launch, a compact strip sits on the ghost's start pad (centered on it, about 90 cm above, tilted back about 30°) with two rows, "−" / value / "+" for cones (default 6, range 4–12) and for cone spacing (default 1.0 m, range 0.8–1.5 m in 0.1 m steps), and a "PLACE DRILL" button. A ghost drill is on the floor about 2 m ahead and turns with my view, the strip moving with it. Pressing the steppers changes the values within their ranges and the ghost updates live. Clicking "PLACE DRILL" fixes the drill on the floor, hides the strip and ghost, and shows "STEP ONTO THE PAD" above the pad.
+1. **Setup:** On launch, a compact strip sits on the ghost's start pad (over the pad's near half, about 25 cm above the floor, tilted back about 55° from vertical, scaled up 15%) with two rows, "−" / value / "+" for cones (default 6, range 4–12) and for cone spacing (default 1.0 m, range 0.8–1.5 m in 0.1 m steps), and a "PLACE DRILL" button. A ghost drill is on the floor about 2 m ahead and turns with my view, the strip moving with it. Pressing the steppers changes the values within their ranges and the ghost updates live. Clicking "PLACE DRILL" fixes the drill on the floor, hides the strip and ghost, and shows "STEP ONTO THE PAD" above the pad.
 2. **Correct layout:** The placed drill has the chosen number of cones (6 by default, 4–12) exactly as far apart as the strip said (1.0 m by default, any value from 0.8 to 1.5 m), each with a glowing pole about 1 m tall (the next one brighter and thicker), plus a path line weaving between them, a start pad before cone 1 and a wide, bright finish band.
-3. **One cue at a time:** Walking from the start pad through the drill, I see "Eyes up", then "Bend knees" and "Arms forward", each 2 cones before its phase starts (N cones: Middle from cone ⌈N/3⌉+1, Exit from cone ⌈2N/3⌉+1). Never more than one cue on screen, each fading after about 3 s, and the highlighted pole always moves to the next cone after I pass one.
+3. **One cue at a time:** Walking from the start pad through the drill, I see no cue near the start, then "Bend knees" above cone ⌈N/2⌉+1 and "Arms forward" above cone N (N cones), each appearing when I'm 2 cones before it and hiding once I pass it. Never more than one cue on screen, and the highlighted pole always moves to the next cone after I pass one.
 4. **Recovery:** If I walk straight past a cone without weaving, it turns amber and the highlight moves on. If I turn around so the highlighted pole is out of view, an edge arrow appears pointing to it and disappears when I face it again.
-5. **Finish and restart:** Crossing the line after the last cone shows a card with "RUN COMPLETE", "CLEAN RUN" or "NICE RUN", one cone icon per cone (cyan cleared, amber missed), the real-numbers line, and "AGAIN" / "MOVE DRILL" buttons. A clean run celebrates (magenta frame, glitching headline, pole wave, shards); a run with misses doesn't, and its missed cones pulse amber once. "AGAIN" resets all cones and highlights cone 1. "MOVE DRILL" brings back the ghost and strip with the last values. Walking back onto the start pad resets the run the same way.
+5. **Finish and restart:** Crossing the line after the last cone shows a card with "RUN COMPLETE", "CLEAN RUN" or "NICE RUN", one cone icon per cone (cyan cleared, amber missed), the real-numbers line, and "AGAIN" / "CHANGE DRILL" buttons. A clean run celebrates (magenta frame, glitching headline, pole wave, shards); a run with misses doesn't, and its missed cones pulse amber once. "AGAIN" resets all cones and highlights cone 1. "CHANGE DRILL" brings back the ghost and strip with the last values; a small "CHANGE DRILL" button at the pad's near edge does the same whenever no run is in progress. Walking back onto the start pad resets the run the same way.
 
 ## Out of scope
 - More than one drill. One drill done well; the strip only changes count and spacing.

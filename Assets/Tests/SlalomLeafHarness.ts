@@ -24,7 +24,7 @@ import {Interactable} from "SpectaclesInteractionKit.lspkg/Components/Interactio
 import {SlalomCoachSnapshot, SlalomCoachTestState} from "../Scripts/SlalomCoachTestState"
 
 export const CONE_COUNT = 6
-export const CUE_PHRASES = ["Eyes up", "Bend knees", "Arms forward", "Back to line"]
+export const CUE_PHRASES = ["Bend knees", "Arms forward", "Back to line"]
 const AMBER = new vec3(1, 0.62, 0.05)
 const PINCH_TIMEOUT_MS = 30000
 const MAX_PINCH_ATTEMPTS = 3
@@ -517,6 +517,13 @@ export class SkaterRig {
   setPitchDownDeg(degrees: number): void {
     // Keep the camera's own base orientation and add only the difference from its starting tilt.
     this.pitchRotation = this.levelPitch.multiply(quat.angleAxis((-(degrees + this.basePitchDeg) * Math.PI) / 180, vec3.right()))
+  }
+
+  /** Sets the camera's real downward tilt in degrees (0 is level, positive looks down), keeping the heading. */
+  setLookDownDeg(degrees: number): void {
+    const look = this.pitchRotation.multiplyVec3(new vec3(0, 0, -1))
+    const current = (-Math.asin(Math.max(-1, Math.min(1, look.y))) * 180) / Math.PI
+    this.pitchRotation = this.pitchRotation.multiply(quat.angleAxis((-(degrees - current) * Math.PI) / 180, vec3.right()))
   }
 
   /** The camera's real downward tilt in degrees, positive looking down. */

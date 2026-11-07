@@ -1,10 +1,10 @@
 /**
  * Criterion 5, Finish and restart. The card shows RUN COMPLETE, CLEAN RUN / NICE RUN, one cone icon per cone
- * (cyan cleared, amber missed), the real-numbers line, AGAIN and MOVE DRILL. A clean run celebrates (magenta
+ * (cyan cleared, amber missed), the real-numbers line, AGAIN and CHANGE DRILL. A clean run celebrates (magenta
  * frame, glitching headline, pole wave, shards); a run with misses does not, and its missed cones pulse amber. Parameter "flow":
  *   clean_again: 6/6, pinch Again, then a second clean run to prove the reset was real.
  *   miss_pad: 5/6 with one miss, walk back onto the pad, then a clean run.
- *   move_drill: finish, pinch Move drill, check the panel and ghost are back and the slider kept its value, drag
+ *   move_drill: finish, pinch Change drill, check the panel and ghost are back and the slider kept its value, drag
  *               the slider to movedSpacing, place again, and run the new drill.
  */
 
@@ -48,8 +48,12 @@ export class SlalomC5FinishScenario extends Scenario {
     const pincher = new Pincher(config)
     c.info("pinch mode", pincher.mode)
     const placed = await placeWithPinches(pincher, config)
+    // The strip sits low on the floor, so setup looks down at it. Skating looks ahead.
+    rig.setLookDownDeg(5)
     await stepOntoPad(rig)
     c.ok("on the pad: stance card shows", snap().stanceCardVisible)
+    c.ok("on the pad: the CHANGE DRILL button shows at the pad's near edge", this.padButtonShows(), "")
+    this.checkPadButton(c, snap(), "on the pad")
 
     if (flow === "clean_again") {
       await this.finishRun(c, rig, placed, placed.weave, "6/6", "first run")
@@ -77,23 +81,24 @@ export class SlalomC5FinishScenario extends Scenario {
       c.ok("walking back onto the pad: phase is OnPad", snap().runPhase === "OnPad", snap().runPhase)
       await this.finishRun(c, rig, placed, placed.weave, "6/6", "clean run after the pad reset")
     } else {
-      await this.finishRun(c, rig, placed, placed.weave, "6/6", "run before moving")
+      await this.finishRun(c, rig, placed, placed.weave, "6/6", "run before changing the drill")
       const oldCone = placed.parts.cone(0).getTransform().getWorldPosition()
-      await pincher.pinch("MoveDrillButton")
+      await pincher.pinch("ChangeDrillButton")
       // The wearer now looks down at the setup panel again.
-      rig.setPitchDownDeg(rig.setupPitchDeg)
+      rig.setLookDownDeg(rig.setupPitchDeg)
       await frames(3)
       let state = snap()
-      c.ok("Move drill: strip back", state.setupPanelVisible && findRequired("SetupPanel").isEnabledInHierarchy)
-      c.ok("Move drill: ghost back", state.ghostVisible && findRequired("GhostDrill").isEnabledInHierarchy)
-      c.ok("Move drill: drill hidden", !state.drillVisible && !findRequired("Drill").isEnabledInHierarchy)
-      c.ok("Move drill: card hidden", !state.finishCardVisible)
-      c.ok("Move drill: no cue", state.cueCount === 0, `count=${state.cueCount}`)
-      c.ok("Move drill: no arrow", !state.arrowVisible)
-      c.ok("Move drill: setup state back to ghost", state.setupState === "ghost", state.setupState)
-      c.ok("Move drill: the slider keeps its last value", state.sliderValueM === 1.0 && state.sliderText === "1.0 m", `value=${state.sliderValueM} text='${state.sliderText}'`)
-      c.ok("Move drill: ghost back at the last spacing", state.ghostSpacingCm === 100, `ghost=${state.ghostSpacingCm}`)
-      c.ok("Move drill: strip and ghost keep the last cone count", state.coneCount === 6 && state.stripCountText === "6", `count=${state.coneCount} text='${state.stripCountText}'`)
+      c.ok("Change drill: strip back", state.setupPanelVisible && findRequired("SetupPanel").isEnabledInHierarchy)
+      c.ok("Change drill: ghost back", state.ghostVisible && findRequired("GhostDrill").isEnabledInHierarchy)
+      c.ok("Change drill: drill hidden", !state.drillVisible && !findRequired("Drill").isEnabledInHierarchy)
+      c.ok("Change drill: card hidden", !state.finishCardVisible)
+      c.ok("Change drill: no cue", state.cueCount === 0, `count=${state.cueCount}`)
+      c.ok("Change drill: no arrow", !state.arrowVisible)
+      c.ok("Change drill: the pad's CHANGE DRILL button is hidden again", !this.padButtonShows())
+      c.ok("Change drill: setup state back to ghost", state.setupState === "ghost", state.setupState)
+      c.ok("Change drill: the slider keeps its last value", state.sliderValueM === 1.0 && state.sliderText === "1.0 m", `value=${state.sliderValueM} text='${state.sliderText}'`)
+      c.ok("Change drill: ghost back at the last spacing", state.ghostSpacingCm === 100, `ghost=${state.ghostSpacingCm}`)
+      c.ok("Change drill: strip and ghost keep the last cone count", state.coneCount === 6 && state.stripCountText === "6", `count=${state.coneCount} text='${state.stripCountText}'`)
 
       // Wait for the panel to come back in front, then change the spacing with a real drag and place again.
       await this.waitForPanelToSettle(c)
@@ -127,15 +132,20 @@ export class SlalomC5FinishScenario extends Scenario {
 
   private async finishRun(c: Checks, rig: SkaterRig, placed: PlacedDrill, lateral: (s: number) => number, score: string, when: string): Promise<void> {
     let cardBeforeLine = 0
+    let buttonWhileRunning = 0
     await rig.walk(0, placed.finish - 5, 150, lateral, (state) => {
       if (state.finishCardVisible) {
         cardBeforeLine++
       }
+      if (state.runPhase === "Running" && this.padButtonShows()) {
+        buttonWhileRunning++
+      }
     })
+    c.ok(`${when}: the pad's CHANGE DRILL button is hidden while running`, buttonWhileRunning === 0, `frames=${buttonWhileRunning}`)
     c.ok(`${when}: no card before the line`, cardBeforeLine === 0, `frames=${cardBeforeLine}`)
     await rig.walk(placed.finish - 5, placed.finish + 10, 150, lateral)
     // At the finish the wearer is skating with their eyes up, not looking down at a setup panel.
-    rig.setPitchDownDeg(this.cardPitchDeg)
+    rig.setLookDownDeg(this.cardPitchDeg)
     await frames(5)
     const state = snap()
     c.ok(`${when}: phase Finished`, state.runPhase === "Finished", state.runPhase)
@@ -183,7 +193,7 @@ export class SlalomC5FinishScenario extends Scenario {
       c.ok(`${when}: cone icon ${i + 1} is ${wantAmber ? "amber" : "cyan"}`, wantAmber ? colour.x > 0.9 && colour.y > 0.6 && colour.y < 0.78 && colour.z < 0.3 : colour.x < 0.35 && colour.y > 0.85 && colour.z > 0.9, `colour=(${fmt(colour.x)},${fmt(colour.y)},${fmt(colour.z)})`)
     }
     c.ok(`${when}: no icon beyond the last cone`, !findRequired(`ConeIcon_${Math.min(12, state.coneCount + 1)}`).enabled || state.coneCount >= 12)
-    for (const label of ["AGAIN", "MOVE DRILL"]) {
+    for (const label of ["AGAIN", "CHANGE DRILL"]) {
       const found = allTexts().filter((text) => text.getSceneObject().isEnabledInHierarchy && text.text === label && isUnder(text.getSceneObject(), "FinishCard"))
       c.ok(`${when}: '${label}' label shows`, found.length === 1, `count=${found.length}`)
     }
@@ -212,8 +222,9 @@ export class SlalomC5FinishScenario extends Scenario {
       c.ok(`${when}: run with misses does not celebrate`, !state.celebrating && !state.celebrated && state.shardCount === 0 && !(frameColour.x > 0.95 && frameColour.z > 0.9 && frameColour.y < 0.4), `celebrating=${state.celebrating} shards=${state.shardCount}`)
       c.ok(`${when}: missed cones pulse amber once`, state.missPulsed)
     }
+    c.ok(`${when}: the pad's CHANGE DRILL button shows after the finish`, this.padButtonShows(), "")
     c.ok(`${when}: Again has a live Interactable`, !!findInteractableByName("AgainButton", undefined, true))
-    c.ok(`${when}: Move drill has a live Interactable`, !!findInteractableByName("MoveDrillButton", undefined, true))
+    c.ok(`${when}: Change drill has a live Interactable`, !!findInteractableByName("ChangeDrillButton", undefined, true))
 
     const card = findRequired("FinishCard").getTransform().getWorldPosition()
     const eye = rig.actualEye()
@@ -230,6 +241,22 @@ export class SlalomC5FinishScenario extends Scenario {
       c.ok(`${when}: cone icon ${i + 1} fits in the card`, x <= 12.5, `edge=${fmt(x)}`)
     }
     c.ok(`${when}: card inside the view`, view.inView, `screen=(${fmt(view.x)},${fmt(view.y)})`)
+  }
+
+  private padButtonShows(): boolean {
+    return findRequired("ChangeDrillPadRoot").isEnabledInHierarchy
+  }
+
+  /** The pad button: about 25 cm above the floor, on the pad's near edge, tilted back like the strip. */
+  private checkPadButton(c: Checks, state: ReturnType<typeof snap>, when: string): void {
+    const root = findRequired("ChangeDrillPadRoot").getTransform()
+    const position = root.getWorldPosition()
+    const pad = new vec3(state.padCentre.x, state.padCentre.y, state.padCentre.z)
+    const forward = new vec3(state.drillForward.x, 0, state.drillForward.z)
+    const along = new vec3(position.x - pad.x, 0, position.z - pad.z).dot(forward)
+    c.near(`${when}: pad button is on the pad's near edge, cm before centre`, along, -50, 2)
+    c.near(`${when}: pad button is about 25 cm above the floor`, position.y - state.floorY, 25, 1)
+    c.near(`${when}: pad button is tilted back about 55 degrees from vertical (normal.y)`, root.getWorldRotation().multiplyVec3(new vec3(0, 0, 1)).y, 0.819, 0.05)
   }
 
   private async waitForPanelToSettle(c: Checks): Promise<void> {

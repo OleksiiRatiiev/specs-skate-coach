@@ -1,6 +1,6 @@
 /**
  * Criterion 1, part 1: what is on screen at launch. No pinch. Measures the setup strip anchored to the
- * ghost's start pad (centred on it, about 90 cm up, tilted back about 30 degrees, moving with the ghost),
+ * ghost's start pad (centred on the pad's near half, about 25 cm above the floor, tilted back about 55 degrees from vertical, scaled up 15%, moving with the ghost),
  * its two stepper rows and PLACE DRILL button, text sizes and neon colours, and the ghost drill (from launch,
  * about 2 m ahead, turning with the view). Nothing in the scene is moved to make a check pass.
  */
@@ -81,14 +81,14 @@ export class SlalomC1PanelLaunchScenario extends Scenario {
       c.ok(`launch: text '${text.text}' is light, so it shows on the additive display`, luminance(fill) > 0.5 && fill.w > 0.5, `colour=(${fmt(fill.x)},${fmt(fill.y)},${fmt(fill.z)},${fmt(fill.w)})`)
     }
     for (const value of stripTexts.filter((text) => text.text === "6" || text.text === "1.0 m")) {
-      c.between(`launch: value '${value.text}' is about 5 cm tall`, capHeightCm(value), 4.5, 5.5)
+      c.between(`launch: value '${value.text}' is about 5.75 cm tall (5 cm scaled up 15%)`, capHeightCm(value), 5.2, 6.3)
       const fill = value.textFill.color
       c.ok(`launch: value '${value.text}' is neon cyan #3FF0FF`, Math.abs(fill.x - 0.247) < 0.03 && Math.abs(fill.y - 0.941) < 0.03 && Math.abs(fill.z - 1) < 0.03, `colour=(${fmt(fill.x)},${fmt(fill.y)},${fmt(fill.z)})`)
     }
 
-    // Anchored to the ghost's start pad: centred on it, about 90 cm up, tilted back about 30 degrees.
+    // Anchored to the ghost's start pad: near half, about 25 cm up, tilted back about 55 degrees, scaled 15% up.
     const ghostPad = v3(state.ghostPadPosition)
-    this.checkStrip(c, snap(), "at launch")
+    this.checkStrip(c, rig, snap(), "at launch")
 
     // Frustum (information at the default pose, asserted when the wearer looks a little down).
     const stripCentre = v3(snap().stripPosition)
@@ -111,24 +111,31 @@ export class SlalomC1PanelLaunchScenario extends Scenario {
     const after = ghost.part("StartPad").getTransform().getWorldPosition()
     c.ok("ghost: turned 60 degrees, the pad moved with the view", before.distance(after) > 100, `moved=${fmt(before.distance(after))} cm`)
     await this.checkGhost(c, rig, ghost, "after turning 60 degrees right", 100)
-    this.checkStrip(c, snap(), "after turning 60 degrees: the strip moved with the ghost")
+    this.checkStrip(c, rig, snap(), "after turning 60 degrees: the strip moved with the ghost")
     rig.turnRight(-100)
     await sleep(1000)
     await this.checkGhost(c, rig, ghost, "after turning 40 degrees left of the start", 100)
-    this.checkStrip(c, snap(), "after turning back")
+    this.checkStrip(c, rig, snap(), "after turning back")
     c.near("rig tracks the camera", rig.trackingErrorCm(), 0, 1)
     c.finish()
   }
 
-  private checkStrip(c: Checks, state: ReturnType<typeof snap>, when: string): void {
+  private checkStrip(c: Checks, rig: SkaterRig, state: ReturnType<typeof snap>, when: string): void {
     const ghostPad = v3(state.ghostPadPosition)
     const strip = v3(state.stripPosition)
     const facing = v3(state.panelFacing)
-    c.near(`strip ${when}: centred on the pad (x), cm`, strip.x, ghostPad.x, 0.5)
-    c.near(`strip ${when}: centred on the pad (z), cm`, strip.z, ghostPad.z, 0.5)
-    c.near(`strip ${when}: about 90 cm above the pad, cm`, strip.y - ghostPad.y, 90, 1)
-    // Facing +Z tilted back by 30 degrees: the normal points up by sin(30) = 0.5.
-    c.near(`strip ${when}: tilted back about 30 degrees (normal.y)`, facing.y, 0.5, 0.05)
+    const heading = rig.heading()
+    const offset = new vec3(strip.x - ghostPad.x, 0, strip.z - ghostPad.z)
+    const along = offset.dot(heading)
+    const sideways = offset.dot(new vec3(-heading.z, 0, heading.x))
+    c.near(`strip ${when}: centred across the pad, cm`, sideways, 0, 0.5)
+    c.between(`strip ${when}: over the pad's near half (about 25 cm before its centre), cm`, along, -35, -15)
+    c.ok(`strip ${when}: inside the pad outline`, Math.abs(along) <= 50 && Math.abs(sideways) <= 50, `along=${fmt(along)} sideways=${fmt(sideways)}`)
+    c.near(`strip ${when}: about 25 cm above the floor, cm`, strip.y - ghostPad.y, 25, 1)
+    // Facing +Z tilted back by 55 degrees from vertical: the normal points up by sin(55) = 0.819.
+    c.near(`strip ${when}: tilted back about 55 degrees from vertical (normal.y)`, facing.y, 0.819, 0.05)
+    const scale = findRequired("SetupPanel").getTransform().getWorldScale()
+    c.near(`strip ${when}: scaled up about 15%`, scale.x, 1.15, 0.03)
   }
 
   private async checkGhost(c: Checks, rig: SkaterRig, ghost: DrillParts, when: string, spacing: number): Promise<void> {

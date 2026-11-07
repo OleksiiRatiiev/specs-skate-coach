@@ -11,7 +11,7 @@ import {DrillLayout} from "./SlalomCoachDrillLayout"
 
 export type RunPhase = "Idle" | "OnPad" | "Running" | "Finished"
 export type ConeState = "pending" | "cleared" | "missed"
-export type CueId = "entry" | "middle" | "exit" | "backToLine"
+export type CueId = "backToLine"
 
 export type RunEvent =
   | {type: "reset"}
@@ -30,14 +30,12 @@ export interface RunTuning {
 }
 
 /**
- * Phases for N cones (cone numbers are 1-based): Entry before cone 1, Middle from cone ceil(N/3)+1,
- * Exit from cone ceil(2N/3)+1. A phase's cue shows 2 cones early, when the skater passes the cone
- * two before the phase starts. Returned as 0-based cone indexes.
+ * Cone-anchored cues, 0-based cone indexes for N cones (cone numbers are 1-based):
+ * "Bend knees" sits above cone ceil(N/2)+1 and "Arms forward" above cone N. Each shows once the
+ * skater has passed the cone two before its own, and hides once its own cone is passed.
  */
 export function cueConeIndexes(coneCount: number): {middle: number; exit: number} {
-  const middleStart = Math.ceil(coneCount / 3) + 1
-  const exitStart = Math.ceil((2 * coneCount) / 3) + 1
-  return {middle: Math.max(0, middleStart - 3), exit: Math.max(0, exitStart - 3)}
+  return {middle: Math.ceil(coneCount / 2), exit: coneCount - 1}
 }
 
 export class SlalomCoachRunLogic {
@@ -53,16 +51,11 @@ export class SlalomCoachRunLogic {
   private isOffPath = false
   private offPathSec = 0
   private backToLineShown = false
-  private middleCueIndex: number
-  private exitCueIndex: number
 
   constructor(
     private layout: DrillLayout,
     private tuning: RunTuning
   ) {
-    const cues = cueConeIndexes(layout.coneS.length)
-    this.middleCueIndex = cues.middle
-    this.exitCueIndex = cues.exit
     this.clearRun()
   }
 
@@ -102,14 +95,12 @@ export class SlalomCoachRunLogic {
       events.push({type: "reset"})
     } else if (!nowOnPad && this.onPad) {
       this.phase = "Running"
-      events.push({type: "cue", cue: "entry"})
     }
     this.onPad = nowOnPad
 
     if (this.phase === "Idle" && this.crossedStart(s)) {
-      // Skirted the pad rather than crossing it. Still a run, still gets the entry cue.
+      // Skirted the pad rather than crossing it. Still a run.
       this.phase = "Running"
-      events.push({type: "cue", cue: "entry"})
     }
 
     this.distanceToPath = this.layout.distanceToPath(s, t)
@@ -152,12 +143,6 @@ export class SlalomCoachRunLogic {
       this.coneStates[index] = cleared ? "cleared" : "missed"
       this.nextConeIndex++
       events.push({type: "coneResult", index, cleared})
-
-      if (index === this.middleCueIndex) {
-        events.push({type: "cue", cue: "middle"})
-      } else if (index === this.exitCueIndex) {
-        events.push({type: "cue", cue: "exit"})
-      }
     }
   }
 

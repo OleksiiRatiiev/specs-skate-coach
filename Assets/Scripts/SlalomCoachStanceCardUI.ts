@@ -1,83 +1,38 @@
 /**
- * SlalomCoachStanceCardUI - figure plus three stance reminders, floating past the start pad.
+ * SlalomCoachStanceCardUI - compact neon stance reminder beside the start pad.
  *
- * Owns: its layout. Light colours, no backing, as the display is additive.
- * Must not: decide when to show. SlalomCoachMain shows it while the skater is on the pad.
+ * Owns: its layout (chamfered cyan outline, light fill, three uppercase lines, no icon).
+ * Must not: decide when to show or where to stand. SlalomCoachMain places it and shows it while
+ * the skater is on the pad.
+ * Local space: centred on the object, facing +Z, units in cm.
  */
 
-import {FlexDirection} from "SpectaclesUIKit.lspkg/Scripts/Components/Layout2D/Flex/FlexTypes"
-import {addCentredText, flexChild, makeFlex, makeObject} from "./SlalomCoachPanelKitUI"
+import {CYAN, NeonPlate, addNeonText} from "./SlalomCoachNeon"
 
-const imageMaterial = requireAsset("../Materials/ImageMaterial.mat") as Material
-const FIGURE_ICON = requireAsset("../Icons/skateboarding.png") as Texture
+const CARD_W = 22
+const CARD_H = 12.5
+const LINE_CAP = 1.9
+const LINE_PITCH = 3.2
+const LINES = ["EYES UP", "KNEES BENT", "ARMS FORWARD"]
+const TEXT_COLOR = new vec4(0.9, 1, 1, 1)
 
 @component
 export class SlalomCoachStanceCardUI extends BaseScriptComponent {
-  @ui.label('<span style="color: #60A5FA;">SlalomCoachStanceCardUI - stance reminder on the pad</span>')
+  @ui.label('<span style="color: #60A5FA;">SlalomCoachStanceCardUI - stance reminder beside the pad</span>')
   @ui.separator
-  @ui.group_start("Settings")
-  @input
-  @hint("First reminder")
-  lineOne: string = "Knees bent"
-
-  @input
-  @hint("Second reminder")
-  lineTwo: string = "Arms forward"
-
-  @input
-  @hint("Third reminder")
-  lineThree: string = "Eyes 2–3 cones ahead"
-
-  @input
-  @hint("Card height in cm")
-  @widget(new SliderWidget(25, 70, 1))
-  cardHeightCm: number = 40
-
-  @input
-  @hint("Viewing distance the text is scaled for, in cm. Larger makes the text bigger")
-  @widget(new SliderWidget(60, 220, 5))
-  textDistanceCm: number = 130
-
-  @input("vec3", "{0.85,0.97,1}")
-  @hint("Colour of the figure and text. Keep it light for the additive display")
-  @widget(new ColorWidget())
-  cardColor: vec3
-  @ui.group_end
 
   private hideWhenReady = false
   private ready = false
 
   onAwake(): void {
-    const width = 42
-    const height = this.cardHeightCm
-    const rowHeight = height * 0.14
-    const figureSize = height - rowHeight * 3 - 2
-    const color = new vec4(this.cardColor.x, this.cardColor.y, this.cardColor.z, 1)
-
-    this.sceneObject.createComponent("Component.Canvas")
-    const column = makeFlex(this.sceneObject, FlexDirection.Column, width, height, {gap: 0.5})
-
-    flexChild(column, "Figure", figureSize, figureSize, (cell) => {
-      const figure = makeObject(cell, "FigureImage")
-      const image = figure.createComponent("Component.Image") as Image
-      const material = imageMaterial.clone()
-      material.mainPass.baseTex = FIGURE_ICON
-      material.mainPass.baseColor = color
-      material.mainPass.depthTest = true
-      material.mainPass.depthWrite = false
-      image.clearMaterials()
-      image.addMaterial(material)
-      figure.getTransform().setLocalScale(new vec3(figureSize, figureSize, 1))
+    const root = this.sceneObject
+    new NeonPlate(root, "StancePlate", CARD_W, CARD_H, CYAN, {chamfer: 1.6, line: 0.18, fillAlpha: 0.12, brackets: true, order: 4})
+    LINES.forEach((line, index) => {
+      const y = (1 - index) * LINE_PITCH
+      addNeonText(root, line, "Bold", LINE_CAP, TEXT_COLOR, {glow: true, spacing: 0.1, position: new vec3(0, y, 0.3), name: `StanceLine_${index + 1}`})
     })
 
-    const lines = [this.lineOne, this.lineTwo, this.lineThree]
-    lines.forEach((line, index) => {
-      flexChild(column, `StanceLine_${index + 1}`, width, rowHeight, (cell) => {
-        addCentredText(cell, line, "Title1", width, rowHeight, this.textDistanceCm, color)
-      })
-    })
-
-    // Hide only after UI Kit has started, because a disabled object never gets OnStart.
+    // Hide only after the first frame, so every component has started.
     const firstUpdate = this.createEvent("UpdateEvent")
     firstUpdate.bind(() => {
       firstUpdate.enabled = false

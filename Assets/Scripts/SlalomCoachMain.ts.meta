@@ -30,6 +30,8 @@
   ScriptInputsHidden:
     backToLineCue: false
     cameraObject: false
+    coneCueHeightCm: false
+    coneCueSideCm: false
     cue: false
     cueAheadCm: false
     cueHeightCm: false
@@ -40,7 +42,6 @@
     driftPulseSec: false
     drill: false
     edgeArrow: false
-    entryCue: false
     exitCue: false
     eyeHeightCm: false
     farFromDrillCm: false
@@ -59,8 +60,8 @@
     setupPanel: false
     sideClearanceCm: false
     stanceCard: false
-    stanceCardAheadCm: false
-    stanceCardHeightCm: false
+    stanceCardFloorHeightCm: false
+    stanceCardLeftCm: false
     testState: false
   ScriptTypesHidden:
     {}
@@ -92,19 +93,20 @@
       driftPulseSec: 0.800000
       farFromDrillCm: !<float> 500.000000
       quietArrowWhileSkating: true
-      entryCue: Eyes up
       middleCue: Bend knees
       exitCue: Arms forward
       backToLineCue: Back to line
       cueAheadCm: !<float> 250.000000
       cueHeightCm: !<float> 120.000000
       cueSideOffsetCm: !<float> 40.000000
+      coneCueHeightCm: !<float> 130.000000
+      coneCueSideCm: !<float> 50.000000
       eyeHeightCm: !<float> 160.000000
       ghostAheadCm: !<float> 200.000000
       finishCardDistanceCm: !<float> 70.000000
       finishCardDropCm: !<float> 10.000000
-      stanceCardAheadCm: !<float> 100.000000
-      stanceCardHeightCm: !<float> 130.000000
+      stanceCardLeftCm: !<float> 70.000000
+      stanceCardFloorHeightCm: !<float> 120.000000
   ScriptTypes:
     -
       {}
@@ -142,13 +144,14 @@
     - '// @ui {"widget":"group_end"}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"group_start", "label":"Cue wording and placement"}'
-    - '// @input string entryCue = "Eyes up" {"hint":"Cue on leaving the start pad"}'
-    - '// @input string middleCue = "Bend knees" {"hint":"Cue on reaching cone 2"}'
-    - '// @input string exitCue = "Arms forward" {"hint":"Cue on reaching cone 5"}'
+    - '// @input string middleCue = "Bend knees" {"hint":"Cue above cone ceil(N/2)+1"}'
+    - '// @input string exitCue = "Arms forward" {"hint":"Cue above the last cone"}'
     - '// @input string backToLineCue = "Back to line" {"hint":"Cue after staying off the path line"}'
-    - '// @input float cueAheadCm = 250 {"hint":"How far ahead of the skater along the drill the cue appears, in cm", "widget":"slider", "min":100, "max":400, "step":10}'
+    - '// @input float cueAheadCm = 250 {"hint":"Back to line cue: how far ahead of the skater along the drill it appears, in cm", "widget":"slider", "min":100, "max":400, "step":10}'
     - '// @input float cueHeightCm = 120 {"hint":"Cue height above the floor, in cm", "widget":"slider", "min":60, "max":200, "step":5}'
     - '// @input float cueSideOffsetCm = 40 {"hint":"Sideways offset from the path line, in cm", "widget":"slider", "min":0, "max":120, "step":5}'
+    - '// @input float coneCueHeightCm = 130 {"hint":"Cone cues (Bend knees, Arms forward): height above the floor, in cm", "widget":"slider", "min":80, "max":200, "step":5}'
+    - '// @input float coneCueSideCm = 50 {"hint":"Cone cues: sideways distance from the path line, in cm", "widget":"slider", "min":0, "max":120, "step":5}'
     - '// @ui {"widget":"group_end"}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"group_start", "label":"Surface placement"}'
@@ -156,6 +159,6 @@
     - "// @input float ghostAheadCm = 200 {\"hint\":\"Distance from the skater to the ghost's start pad, in cm\", \"widget\":\"slider\", \"min\":100, \"max\":400, \"step\":10}"
     - '// @input float finishCardDistanceCm = 80 {"hint":"Finish card distance, in cm", "widget":"slider", "min":40, "max":110, "step":5}'
     - '// @input float finishCardDropCm = 15 {"hint":"How far below eye level the finish card floats, in cm", "widget":"slider", "min":0, "max":40, "step":1}'
-    - '// @input float stanceCardAheadCm = 100 {"hint":"Stance card distance from the pad centre along the drill, in cm", "widget":"slider", "min":50, "max":200, "step":5}'
-    - '// @input float stanceCardHeightCm = 147 {"hint":"Stance card centre height above the floor, in cm", "widget":"slider", "min":80, "max":180, "step":5}'
+    - '// @input float stanceCardLeftCm = 70 {"hint":"Stance card distance to the left of the pad centre, in cm", "widget":"slider", "min":40, "max":150, "step":5}'
+    - '// @input float stanceCardFloorHeightCm = 120 {"hint":"Stance card centre height above the floor, in cm", "widget":"slider", "min":80, "max":180, "step":5}'
     - '// @ui {"widget":"group_end"}'

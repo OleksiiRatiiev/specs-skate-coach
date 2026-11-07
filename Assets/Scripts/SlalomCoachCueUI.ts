@@ -43,6 +43,7 @@ export class SlalomCoachCueUI extends BaseScriptComponent {
   private state: "none" | "swapping" | "fadeIn" | "hold" | "fadeOut" = "none"
   private stateTime = 0
   private logicalCue = ""
+  private persistent = false
   private pendingPosition = vec3.zero()
   private pendingRotation = quat.quatIdentity()
 
@@ -71,7 +72,8 @@ export class SlalomCoachCueUI extends BaseScriptComponent {
   }
 
   /** Replaces any current cue with a quick fade. worldRotation should face the skater. */
-  showCue(cue: string, worldPosition: vec3, worldRotation: quat): void {
+  showCue(cue: string, worldPosition: vec3, worldRotation: quat, persistent: boolean = false): void {
+    this.persistent = persistent
     this.logicalCue = cue
     this.pendingPosition = worldPosition
     this.pendingRotation = worldRotation
@@ -83,7 +85,19 @@ export class SlalomCoachCueUI extends BaseScriptComponent {
     }
   }
 
+  /** Fades the current cue out now. Used when a persistent, cone-anchored cue is passed. */
+  hide(): void {
+    if (this.state === "none") {
+      return
+    }
+    this.persistent = false
+    this.logicalCue = ""
+    this.state = "fadeOut"
+    this.stateTime = 0
+  }
+
   clear(): void {
+    this.persistent = false
     this.logicalCue = ""
     this.state = "none"
     this.setAlpha(0)
@@ -131,7 +145,7 @@ export class SlalomCoachCueUI extends BaseScriptComponent {
         break
       }
       case "hold": {
-        if (this.stateTime >= this.holdSec) {
+        if (!this.persistent && this.stateTime >= this.holdSec) {
           this.state = "fadeOut"
           this.stateTime = 0
           // The cue's time is up. It stops counting as active once the fade has started.

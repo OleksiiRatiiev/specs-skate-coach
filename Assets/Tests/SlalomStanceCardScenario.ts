@@ -1,8 +1,8 @@
 /**
  * Stance card. Shows while the skater stands on the start pad before leaving, including after walking back
- * onto it, and hides on leaving. Floats about 1 m in front of the pad centre, faces the pad, about 40 cm
- * tall, light colours with no dark background, and says Knees bent / Arms forward / Eyes 2-3 cones ahead.
- * The words are read from the real Text components.
+ * onto it, and hides on leaving. A compact neon card (about 22 cm wide, Chakra Petch, cyan chamfered outline,
+ * light fill, no icon) off the drill, about 70 cm left of the pad centre and 1.2 m high, facing the pad, saying
+ * EYES UP / KNEES BENT / ARMS FORWARD. The words are read from the real Text components.
  */
 
 import {Scenario} from "Leaf.lspkg/Scenarios/scenario/Scenario"
@@ -40,6 +40,8 @@ export class SlalomStanceCardScenario extends Scenario {
     let state = snap()
     c.ok("placed, skater is 2 m from the pad: the stance card is hidden", !state.stanceCardVisible && !card.isEnabledInHierarchy, `visible=${state.stanceCardVisible} enabled=${card.isEnabledInHierarchy}`)
 
+    // The strip sits low on the floor, so setup looks down at it. Skating looks ahead.
+    rig.setLookDownDeg(5)
     await stepOntoPad(rig)
     state = snap()
     c.ok("standing on the pad: the stance card shows", state.stanceCardVisible && card.isEnabledInHierarchy, `visible=${state.stanceCardVisible} enabled=${card.isEnabledInHierarchy}`)
@@ -49,13 +51,12 @@ export class SlalomStanceCardScenario extends Scenario {
     const forward = v3(state.drillForward)
     const right = v3(state.drillRight)
     const position = card.getTransform().getWorldPosition()
-    const eye = rig.actualEye()
     const ahead = position.sub(pad).dot(forward)
     const sideways = position.sub(pad).dot(right)
-    c.info("stance card", `position=${fmtV(position)} ahead=${fmt(ahead)} sideways=${fmt(sideways)} aboveFloor=${fmt(position.y - state.floorY)} belowEye=${fmt(eye.y - position.y)}`)
-    c.near("stance card: about 1 m in front of the pad centre, cm", ahead, 100, 10)
-    c.near("stance card: on the centre line, cm", sideways, 0, 5)
-    c.between("stance card: slightly below eye level, cm below", eye.y - position.y, 3, 30)
+    c.info("stance card", `position=${fmtV(position)} ahead=${fmt(ahead)} sideways=${fmt(sideways)} aboveFloor=${fmt(position.y - state.floorY)}`)
+    c.near("stance card: level with the pad centre along the drill, off the drill, cm", ahead, 0, 5)
+    c.near("stance card: about 70 cm to the left of the pad centre, cm", sideways, -70, 5)
+    c.near("stance card: about 1.2 m above the floor, cm", position.y - state.floorY, 120, 5)
     const facing = card.getTransform().getWorldRotation().multiplyVec3(new vec3(0, 0, 1))
     const toPad = new vec3(pad.x - position.x, 0, pad.z - position.z).normalize()
     c.ok("stance card: faces the pad", new vec3(facing.x, 0, facing.z).normalize().dot(toPad) > 0.95, `facingDotToPad=${fmt(new vec3(facing.x, 0, facing.z).normalize().dot(toPad))}`)
@@ -65,7 +66,7 @@ export class SlalomStanceCardScenario extends Scenario {
     const texts = allTexts().filter((text) => text.getSceneObject().isEnabledInHierarchy && isUnder(text.getSceneObject(), "StanceCard"))
     const words = texts.map((text) => text.text)
     c.info("stance card texts", JSON.stringify(words))
-    for (const wanted of ["Knees bent", "Arms forward", "Eyes 2–3 cones ahead"]) {
+    for (const wanted of ["EYES UP", "KNEES BENT", "ARMS FORWARD"]) {
       c.ok(`stance card says '${wanted}' once`, words.filter((word) => word === wanted).length === 1, `texts=${JSON.stringify(words)}`)
     }
     c.ok("stance card has exactly those three lines", words.length === 3, `count=${words.length}`)
@@ -98,7 +99,12 @@ export class SlalomStanceCardScenario extends Scenario {
       }
     })
     c.ok("stance card: no dark visual and no backing panel", darkVisuals === 0 && visualCount >= 4, `dark=${darkVisuals} visuals=${visualCount}`)
-    c.between("stance card: about 40 cm tall (union of its real visuals)", top - bottom, 35, 45)
+    c.between("stance card: compact, under 16 cm tall (union of its real visuals)", top - bottom, 8, 16)
+    const plateFrame = findRequired("Frame", findRequired("StancePlate")).getComponent("Component.RenderMeshVisual") as RenderMeshVisual
+    c.near("stance card: about 22 cm wide", plateFrame.mesh.aabbMax.sub(plateFrame.mesh.aabbMin).x * card.getTransform().getWorldScale().x, 22, 0.5)
+    const cyan = plateFrame.mainMaterial.mainPass.baseColor
+    c.ok("stance card: cyan outline", Math.abs(cyan.x - 0.247) < 0.03 && Math.abs(cyan.y - 0.941) < 0.03 && Math.abs(cyan.z - 1) < 0.03, `colour=(${fmt(cyan.x)},${fmt(cyan.y)},${fmt(cyan.z)})`)
+    c.ok("stance card: no skateboard icon (no Image)", !allImagesUnder(card), "")
 
     // Fixed in the world, and the lifecycle as the skater leaves and returns.
     const startPosition = position
@@ -140,4 +146,12 @@ export class SlalomStanceCardScenario extends Scenario {
     c.near("rig tracks the camera", rig.trackingErrorCm(), 0, 1)
     c.finish()
   }
+}
+
+function allImagesUnder(root: SceneObject): boolean {
+  let found = false
+  forEachComponentInSubtree<any>(root, ["Component.Image"], () => {
+    found = true
+  })
+  return found
 }

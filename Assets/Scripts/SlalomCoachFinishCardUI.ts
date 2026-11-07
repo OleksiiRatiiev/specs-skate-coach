@@ -1,9 +1,9 @@
 /**
  * SlalomCoachFinishCardUI - the end-of-run card: result headline, one icon per cone, a real-numbers
- * line, and the AGAIN / MOVE DRILL buttons.
+ * line, and the AGAIN / CHANGE DRILL buttons.
  *
  * Owns: its neon layout, the clean-run celebration look (magenta frame, brief headline glitch).
- * Reports: onAgain and onMoveDrill.
+ * Reports: onAgain and onChangeDrill.
  * Must not: keep score or decide when to show. SlalomCoachMain pushes the result in.
  */
 
@@ -35,7 +35,7 @@ export class SlalomCoachFinishCardUI extends BaseScriptComponent {
   @ui.separator
 
   private _onAgain = new Event<void>()
-  private _onMoveDrill = new Event<void>()
+  private _onChangeDrill = new Event<void>()
   private plate: NeonPlate
   private headline: Text
   private glitchMagenta: Text
@@ -43,7 +43,7 @@ export class SlalomCoachFinishCardUI extends BaseScriptComponent {
   private detail: Text
   private icons: Part[] = []
   private againButton: NeonButton
-  private moveButton: NeonButton
+  private changeButton: NeonButton
   private scoreText = ""
   private clean = false
   private celebrating = false
@@ -61,8 +61,8 @@ export class SlalomCoachFinishCardUI extends BaseScriptComponent {
     return this._onAgain.publicApi()
   }
 
-  get onMoveDrill(): PublicApi<void> {
-    return this._onMoveDrill.publicApi()
+  get onChangeDrill(): PublicApi<void> {
+    return this._onChangeDrill.publicApi()
   }
 
   onAwake(): void {
@@ -94,14 +94,14 @@ export class SlalomCoachFinishCardUI extends BaseScriptComponent {
       spacing: 0.05,
       iconRadius: 0.6,
     })
-    this.moveButton = new NeonButton(root, "MoveDrillButton", "MOVE DRILL", BUTTON_W, BUTTON_H, new vec3(BUTTON_X, BUTTON_Y, 0.1), {
+    this.changeButton = new NeonButton(root, "ChangeDrillButton", "CHANGE DRILL", BUTTON_W, BUTTON_H, new vec3(BUTTON_X, BUTTON_Y, 0.1), {
       style: "white",
       weight: "SemiBold",
       capCm: 1.2,
       spacing: 0.05,
     })
     this.againButton.onPress.add(() => this._onAgain.invoke())
-    this.moveButton.onPress.add(() => this._onMoveDrill.invoke())
+    this.changeButton.onPress.add(() => this._onChangeDrill.invoke())
 
     // Hide only after UI Kit has started, because a disabled object never gets OnStart.
     const firstUpdate = this.createEvent("UpdateEvent")
@@ -227,7 +227,7 @@ export class SlalomCoachFinishCardUI extends BaseScriptComponent {
     }
     if (!this.buttonsFitted) {
       const a = this.againButton.fitContent(BUTTON_W - 3, 0.9)
-      const m = this.moveButton.fitContent(BUTTON_W - 3, 0.9)
+      const m = this.changeButton.fitContent(BUTTON_W - 3, 0.9)
       this.buttonsFitted = a && m
     }
   }

@@ -17,6 +17,8 @@ const FADE_SEC = 1
 const LIFETIME_SEC = FALL_SEC + FADE_SEC
 const GRAVITY_CM_S2 = 80
 const DRAG_PER_SEC = 2.5
+// Rain: shards start falling in waves over this many seconds, so it keeps raining instead of one pop.
+const RAIN_STAGGER_SEC = 2
 
 interface Shard {
   object: SceneObject
@@ -86,6 +88,32 @@ export class SlalomCoachShards {
     }
   }
 
+  /**
+   * Neon rain in front of the wearer: shards appear above eye level over a box centred on a world point
+   * (about 180 cm wide along `right`, 120 cm deep along `forward`) and flutter down to the floor in waves.
+   */
+  rain(centre: vec3, right: vec3, forward: vec3, floorY: number = -1e9): void {
+    this.floorY = floorY
+    this.active = true
+    this.elapsed = 0
+    for (const shard of this.shards) {
+      const x = (Math.random() - 0.5) * 180
+      const z = (Math.random() - 0.5) * 120
+      const y = 15 + Math.random() * 75
+      shard.velocity = new vec3((Math.random() - 0.5) * 40, -15 - Math.random() * 25, (Math.random() - 0.5) * 40)
+      shard.spinAxis = new vec3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize()
+      shard.spinSpeed = 3 + Math.random() * 7
+      shard.scale = 0.8 + Math.random() * 0.9
+      shard.age = -Math.random() * RAIN_STAGGER_SEC
+      const transform = shard.object.getTransform()
+      transform.setWorldPosition(centre.add(right.uniformScale(x)).add(forward.uniformScale(z)).add(new vec3(0, y, 0)))
+      transform.setWorldRotation(quat.angleAxis(Math.random() * Math.PI * 2, shard.spinAxis))
+      transform.setLocalScale(new vec3(shard.scale, shard.scale, shard.scale))
+      shard.object.enabled = true
+      shard.material.mainPass.baseColor = new vec4(shard.color.x, shard.color.y, shard.color.z, 0)
+    }
+  }
+
   isActive(): boolean {
     return this.active
   }
@@ -116,6 +144,10 @@ export class SlalomCoachShards {
         continue
       }
       shard.age += dt
+      if (shard.age < 0) {
+        // Still waiting for its wave: stays hidden and still.
+        continue
+      }
       if (shard.age >= LIFETIME_SEC) {
         shard.object.enabled = false
         continue
@@ -130,7 +162,7 @@ export class SlalomCoachShards {
       const alpha = shard.age < FALL_SEC ? 1 : 1 - (shard.age - FALL_SEC) / FADE_SEC
       shard.material.mainPass.baseColor = new vec4(shard.color.x, shard.color.y, shard.color.z, alpha)
     }
-    if (this.elapsed >= LIFETIME_SEC) {
+    if (this.elapsed >= LIFETIME_SEC + RAIN_STAGGER_SEC) {
       this.stop()
     }
   }

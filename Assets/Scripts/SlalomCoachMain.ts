@@ -22,18 +22,22 @@ import {SlalomCoachStanceCardUI} from "./SlalomCoachStanceCardUI"
 import {SlalomCoachSnapshot, SlalomCoachTestState} from "./SlalomCoachTestState"
 import {SlalomCoachVirtualFloor} from "./SlalomCoachVirtualFloor"
 
-const STRIP_HEIGHT_CM = 110
+const STRIP_HEIGHT_CM = 125
 const STRIP_TILT_BACK_RAD = (15 * Math.PI) / 180
-const STRIP_RIGHT_CM = 60
-const STRIP_WIDTH_CM = 38 * 1.15
+// The strip's left edge stays at least this far off the drill line, so it can't cover the cones.
+const STRIP_PATH_CLEAR_RAD = (9 * Math.PI) / 180
+// Never further ahead of the wearer than this, in cm.
+const STRIP_MAX_DEPTH_CM = 340
+const STRIP_WIDTH_CM = 30
 const STRIP_VIEW_MARGIN = 0.9
-const STRIP_SCALE = 1.15
+const STRIP_SCALE = 1.0
 const CHANGE_BUTTON_W = 17
 const CHANGE_BUTTON_H = 4.6
 const STEP_HINT_HEIGHT_CM = 110
 const STEP_HINT_TEXT = "STEP ONTO THE PAD"
 const WAVE_STEP_SEC = 0.2
-const SHARD_BURST_HEIGHT_CM = 60
+// How far ahead of the wearer the clean-run neon rain is centred, in cm.
+const SHARD_RAIN_AHEAD_CM = 140
 const LAZY_FOLLOW_ANGLE_DEG = 35
 const LAZY_FOLLOW_DISTANCE_MARGIN_CM = 30
 const LAZY_FOLLOW_SPEED = 4
@@ -448,8 +452,9 @@ export class SlalomCoachMain extends BaseScriptComponent {
       transform.setWorldRotation(yawRotation)
       // The setup strip stands right of the pad, level with its near edge, 110 cm up, tilted back 15 degrees towards the wearer.
       const strip = this.setupPanel.getSceneObject().getTransform()
-      const nearEdge = -this.padSizeCm / 2
-      const lateral = this.stripRightCm()
+      const place = this.stripPlacement()
+      const nearEdge = place.s
+      const lateral = place.t
       const right = new vec3(-heading.z, 0, heading.x)
       strip.setWorldPosition(new vec3(origin.x + heading.x * nearEdge + right.x * lateral, origin.y + STRIP_HEIGHT_CM, origin.z + heading.z * nearEdge + right.z * lateral))
       strip.setWorldRotation(yawRotation.multiply(quat.angleAxis(-STRIP_TILT_BACK_RAD, vec3.right())))
@@ -491,7 +496,7 @@ export class SlalomCoachMain extends BaseScriptComponent {
     }
 
     this.stanceCard.setVisible(this.logic.onPad)
-    this.setChangeButtonVisible(this.logic.phase !== "Running")
+    this.setChangeButtonVisible(this.logic.phase !== "Running" && this.logic.phase !== "Finished")
     this.updateAnchoredCue(eye)
     this.updateStepHint(eye)
     this.drill.tickEffects(dt)
@@ -551,7 +556,11 @@ export class SlalomCoachMain extends BaseScriptComponent {
           this.celebrated = true
           this.finishCard.setCelebrating(true)
           this.drill.playWave(new vec3(1, 0.239, 0.941), new vec3(1, 1, 1), WAVE_STEP_SEC)
-          this.shards?.burst(this.drillPoint(this.layout.finishS, 0, SHARD_BURST_HEIGHT_CM), this.floorY)
+          // Neon rain just in front of the wearer and the card, where the narrow view can actually see it.
+          const flat = new vec3(heading.x, 0, heading.z).normalize()
+          const side = new vec3(-flat.z, 0, flat.x)
+          const rainCentre = new vec3(eye.x + flat.x * SHARD_RAIN_AHEAD_CM, eye.y, eye.z + flat.z * SHARD_RAIN_AHEAD_CM)
+          this.shards?.rain(rainCentre, side, flat, this.floorY)
         } else {
           this.missPulsed = true
           const missed: number[] = []
@@ -703,12 +712,18 @@ export class SlalomCoachMain extends BaseScriptComponent {
     return facingUpDrill && s < this.layout.coneS[index] && Math.abs(t) <= this.driftDistanceCm
   }
 
-  /** Distance right of the pad centre for the strip and the button: 60 cm, or closer so the far edge stays in view. */
-  private stripRightCm(): number {
-    const halfWidth = Math.atan(Math.tan(this.camera.fov / 2) * this.camera.aspect) * STRIP_VIEW_MARGIN
-    const distanceAhead = this.ghostAheadCm - this.padSizeCm / 2
-    const fits = Math.tan(halfWidth) * distanceAhead - STRIP_WIDTH_CM / 2
-    return Math.max(0, Math.min(STRIP_RIGHT_CM, fits))
+  /**
+   * Where the setup strip and the CHANGE DRILL button sit, relative to the drill (s along it from the pad centre,
+   * t to the right). The strip's right edge stays just inside the view and its left edge at least STRIP_PATH_CLEAR_RAD
+   * off the drill line, so it never covers the cones; when that can't fit at the pad, it moves a little further ahead.
+   */
+  private stripPlacement(): {s: number; t: number} {
+    const half = Math.atan(Math.tan(this.camera.fov / 2) * this.camera.aspect) * STRIP_VIEW_MARGIN
+    const edge = Math.tan(half)
+    const clear = Math.tan(STRIP_PATH_CLEAR_RAD)
+    const needed = edge > clear ? STRIP_WIDTH_CM / (edge - clear) : STRIP_MAX_DEPTH_CM
+    const depth = Math.min(STRIP_MAX_DEPTH_CM, Math.max(this.ghostAheadCm, needed))
+    return {s: depth - this.ghostAheadCm, t: depth * edge - STRIP_WIDTH_CM / 2}
   }
 
   /** Right of the pad, level with its near edge, same height and tilt as the strip. */
@@ -717,7 +732,8 @@ export class SlalomCoachMain extends BaseScriptComponent {
       return
     }
     const transform = this.changeButton.object.getParent().getTransform()
-    transform.setWorldPosition(this.drillPoint(-this.padSizeCm / 2, this.stripRightCm(), STRIP_HEIGHT_CM))
+    const place = this.stripPlacement()
+    transform.setWorldPosition(this.drillPoint(place.s, place.t, STRIP_HEIGHT_CM))
     const yaw = quat.angleAxis(this.drillYaw, vec3.up())
     transform.setWorldRotation(yaw.multiply(quat.angleAxis(-STRIP_TILT_BACK_RAD, vec3.right())))
   }

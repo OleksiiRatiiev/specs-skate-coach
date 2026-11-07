@@ -4,7 +4,7 @@ status: approved
 
 # Design brief: Slalom Coach AR
 
-A drill coach for beginner inline skaters learning alone. Pick a drill, lay it on the ground, get short cues at the exact spot where you need them.
+A drill coach for beginner roller skaters (quads or inlines) learning alone. Pick a drill, lay it on the ground, get short cues at the exact spot where you need them.
 
 ## The one spatial moment
 I'm on skates in an empty parking lot. Ahead on the ground there are 6 cones (4–12, your choice) 1 m apart and a glowing path weaving between them. As I move through the drill, a 2–3 word cue appears above a cone ("Bend knees", "Arms forward") and the next pole to pass glows brighter.

@@ -18,9 +18,9 @@ const SPACING_MIN_M = 0.8
 const SPACING_MAX_M = 1.5
 const SPACING_STEP_M = 0.1
 
-const STRIP_W = 38
+const STRIP_W = 30
 const STRIP_H = 33
-const STEP_BUTTON = 7
+const STEP_BUTTON = 6
 const PULSE_PERIOD_SEC = 2.6
 
 function snapSpacing(m: number): number {
@@ -141,7 +141,7 @@ export class SlalomCoachSetupPanelUI extends BaseScriptComponent {
     const columnX = STRIP_W / 2 - 2 - STEP_BUTTON / 2
     const rows: {key: "count" | "spacing"; label: string}[] = [
       {key: "count", label: "CONES"},
-      {key: "spacing", label: "CONE SPACING"},
+      {key: "spacing", label: "SPACING"},
     ]
     rows.forEach((row, i) => {
       const y = rowY[i]
@@ -152,7 +152,7 @@ export class SlalomCoachSetupPanelUI extends BaseScriptComponent {
       plus.onPress.add(() => this.step(row.key, 1))
       this.plusMinus[`${row.key}-`] = minus
       this.plusMinus[`${row.key}+`] = plus
-      const value = addNeonText(root, "", "Bold", 5, new vec4(1, 1, 1, 1), {glow: true, position: new vec3(0, y + 0.9, 0.3), name: `${prefix}Value`, spacing: 0.04})
+      const value = addNeonText(root, "", "Bold", 2.8, new vec4(1, 1, 1, 1), {glow: true, position: new vec3(0, y + 0.9, 0.3), name: `${prefix}Value`, spacing: 0.04})
       value.textFill.color = CYAN
       addNeonText(root, row.label, "Medium", 1.25, withAlpha(CYAN, 0.9), {spacing: 0.16, position: new vec3(0, y - 3.0, 0.3), name: `${prefix}Label`})
       if (row.key === "count") {
@@ -165,8 +165,8 @@ export class SlalomCoachSetupPanelUI extends BaseScriptComponent {
     this.placeButton = new NeonButton(root, "PlaceDrillButton", "PLACE DRILL", STRIP_W - 5, 7.5, new vec3(0, -(STRIP_H / 2 - 2.5 - 3.75), 0.1), {
       style: "primary",
       weight: "SemiBold",
-      capCm: 2.3,
-      spacing: 0.14,
+      capCm: 1.7,
+      spacing: 0.1,
     })
     this.placeButton.onPress.add(() => this._onPlaceDrill.invoke())
     this.refresh()

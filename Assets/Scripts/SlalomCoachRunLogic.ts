@@ -29,9 +29,16 @@ export interface RunTuning {
   padExitMarginCm: number
 }
 
-/** Cones whose line starts a new cue: middle at cone 2, exit at cone 5 (0-based here). */
-const MIDDLE_CUE_CONE_INDEX = 1
-const EXIT_CUE_CONE_INDEX = 4
+/**
+ * Phases for N cones (cone numbers are 1-based): Entry before cone 1, Middle from cone ceil(N/3)+1,
+ * Exit from cone ceil(2N/3)+1. A phase's cue shows 2 cones early, when the skater passes the cone
+ * two before the phase starts. Returned as 0-based cone indexes.
+ */
+export function cueConeIndexes(coneCount: number): {middle: number; exit: number} {
+  const middleStart = Math.ceil(coneCount / 3) + 1
+  const exitStart = Math.ceil((2 * coneCount) / 3) + 1
+  return {middle: Math.max(0, middleStart - 3), exit: Math.max(0, exitStart - 3)}
+}
 
 export class SlalomCoachRunLogic {
   phase: RunPhase = "Idle"
@@ -46,11 +53,16 @@ export class SlalomCoachRunLogic {
   private isOffPath = false
   private offPathSec = 0
   private backToLineShown = false
+  private middleCueIndex: number
+  private exitCueIndex: number
 
   constructor(
     private layout: DrillLayout,
     private tuning: RunTuning
   ) {
+    const cues = cueConeIndexes(layout.coneS.length)
+    this.middleCueIndex = cues.middle
+    this.exitCueIndex = cues.exit
     this.clearRun()
   }
 
@@ -141,9 +153,9 @@ export class SlalomCoachRunLogic {
       this.nextConeIndex++
       events.push({type: "coneResult", index, cleared})
 
-      if (index === MIDDLE_CUE_CONE_INDEX) {
+      if (index === this.middleCueIndex) {
         events.push({type: "cue", cue: "middle"})
-      } else if (index === EXIT_CUE_CONE_INDEX) {
+      } else if (index === this.exitCueIndex) {
         events.push({type: "cue", cue: "exit"})
       }
     }

@@ -28,7 +28,6 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
-    cueColor: false
     fadeInSec: false
     fadeOutSec: false
     holdSec: false
@@ -46,7 +45,6 @@
       holdSec: !<float> 2.000000
       fadeInSec: 0.120000
       fadeOutSec: 0.350000
-      cueColor: !<Vec3> {x: 1.000000, y: 1.000000, z: 0.920000}
   ScriptTypes:
     -
       {}
@@ -55,8 +53,7 @@
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"group_start", "label":"Settings"}'
     - '// @input float letterHeightCm = 9 {"hint":"Height of the capital letters in cm", "widget":"slider", "min":4, "max":16, "step":0.5}'
-    - '// @input float holdSec = 2 {"hint":"How long the cue stays fully visible, in seconds", "widget":"slider", "min":0.5, "max":5, "step":0.1}'
+    - '// @input float holdSec = 3 {"hint":"How long the cue stays fully visible, in seconds", "widget":"slider", "min":0.5, "max":5, "step":0.1}'
     - '// @input float fadeInSec = 0.12 {"hint":"Length of the quick fade in and replace, in seconds", "widget":"slider", "min":0.05, "max":0.6, "step":0.05}'
     - '// @input float fadeOutSec = 0.35 {"hint":"Length of the final fade out, in seconds", "widget":"slider", "min":0.05, "max":1.5, "step":0.05}'
-    - '// @input vec3 cueColor = "{1,1,0.92}" {"hint":"Cue colour. Keep it light and high contrast, with no panel behind it", "widget":"color"}'
     - '// @ui {"widget":"group_end"}'

@@ -15,12 +15,19 @@ import {SlalomCoachEdgeArrow} from "./SlalomCoachEdgeArrow"
 import {SlalomCoachCueUI} from "./SlalomCoachCueUI"
 import {SlalomCoachFinishCardUI} from "./SlalomCoachFinishCardUI"
 import {CueId, RunEvent, SlalomCoachRunLogic} from "./SlalomCoachRunLogic"
-import {SlalomCoachSetupPanelUI} from "./SlalomCoachSetupPanelUI"
+import {AMBER, CYAN, addNeonText} from "./SlalomCoachNeon"
+import {COUNT_DEFAULT, COUNT_MAX, COUNT_MIN, SlalomCoachSetupPanelUI} from "./SlalomCoachSetupPanelUI"
+import {SlalomCoachShards} from "./SlalomCoachShards"
 import {SlalomCoachStanceCardUI} from "./SlalomCoachStanceCardUI"
 import {SlalomCoachSnapshot, SlalomCoachTestState} from "./SlalomCoachTestState"
 import {SlalomCoachVirtualFloor} from "./SlalomCoachVirtualFloor"
 
-const CONE_COUNT = 6
+const STRIP_HEIGHT_CM = 90
+const STRIP_TILT_BACK_RAD = (30 * Math.PI) / 180
+const STEP_HINT_HEIGHT_CM = 110
+const STEP_HINT_TEXT = "STEP ONTO THE PAD"
+const WAVE_STEP_SEC = 0.2
+const SHARD_BURST_HEIGHT_CM = 60
 const LAZY_FOLLOW_ANGLE_DEG = 35
 const LAZY_FOLLOW_DISTANCE_MARGIN_CM = 30
 const LAZY_FOLLOW_SPEED = 4
@@ -231,6 +238,11 @@ export class SlalomCoachMain extends BaseScriptComponent {
   private cardFollowing = false
   private arrowTarget: "none" | "pole" | "pad" = "none"
   private lastPhase = ""
+  private coneCount = COUNT_DEFAULT
+  private shards: SlalomCoachShards | null = null
+  private stepHint: Text | null = null
+  private celebrated = false
+  private missPulsed = false
 
   onAwake(): void {
     this.createEvent("OnStartEvent").bind(() => this.start())
@@ -243,11 +255,26 @@ export class SlalomCoachMain extends BaseScriptComponent {
     }
     const snapped = Math.min(1.5, Math.max(0.8, Math.round(m * 10) / 10))
     this.spacingM = snapped
-    this.layout = this.layoutFor(snapped)
+    this.rebuildGhost()
     this.setupPanel.setSpacing(snapped)
+    this.testState.log(`spacing ${snapped} m`)
+  }
+
+  /** Same action as pressing the cone count stepper. 4 to 12 cones. */
+  setCount(n: number): void {
+    if (this.setupState === "placed") {
+      return
+    }
+    this.coneCount = Math.min(COUNT_MAX, Math.max(COUNT_MIN, Math.round(n)))
+    this.rebuildGhost()
+    this.setupPanel.setCount(this.coneCount)
+    this.testState.log(`cones ${this.coneCount}`)
+  }
+
+  private rebuildGhost(): void {
+    this.layout = this.layoutFor(this.coneCount, this.spacingM)
     this.ghost.build(this.layout)
     this.ghost.setVisible(true)
-    this.testState.log(`spacing ${snapped} m`)
   }
 
   /** Same action as pinching "Place drill". */
@@ -270,6 +297,9 @@ export class SlalomCoachMain extends BaseScriptComponent {
     this.ghost.setVisible(false)
     this.setupPanel.setVisible(false)
     this.placeStanceCard()
+    this.celebrated = false
+    this.missPulsed = false
+    this.drill.clearEffects()
 
     this.logic = new SlalomCoachRunLogic(this.layout, {
       sideClearanceCm: this.sideClearanceCm,
@@ -289,12 +319,16 @@ export class SlalomCoachMain extends BaseScriptComponent {
     }
     this.logic.resetToIdle()
     this.applyRunReset()
+    this.hideStepHint()
     this.testState.log("again")
   }
 
   /** Same action as pinching "Move drill". Brings back the setup panel and the ghost. */
   moveDrill(): void {
     this.logic = null
+    this.drill.clearEffects()
+    this.shards?.stop()
+    this.hideStepHint()
     this.drill.setVisible(false)
     this.cue.clear()
     this.finishCard.setVisible(false)
@@ -303,9 +337,9 @@ export class SlalomCoachMain extends BaseScriptComponent {
     this.arrowTarget = "none"
     this.setupPanel.setVisible(true)
     this.setupState = "ghost"
-    this.layout = this.layoutFor(this.spacingM)
-    this.ghost.build(this.layout)
-    this.ghost.setVisible(true)
+    this.setupPanel.setCount(this.coneCount)
+    this.setupPanel.setSpacing(this.spacingM)
+    this.rebuildGhost()
     this.testState.log("move drill")
   }
 
@@ -314,6 +348,7 @@ export class SlalomCoachMain extends BaseScriptComponent {
     this.cameraTransform = this.cameraObject.getTransform()
 
     this.setupPanel.onSpacingChanged.add((m) => this.setSpacing(m))
+    this.setupPanel.onCountChanged.add((n) => this.setCount(n))
     this.setupPanel.onPlaceDrill.add(() => this.placeDrill())
     this.finishCard.onAgain.add(() => this.again())
     this.finishCard.onMoveDrill.add(() => this.moveDrill())
@@ -324,10 +359,15 @@ export class SlalomCoachMain extends BaseScriptComponent {
     // The ghost shows from launch, at the slider's value.
     this.setupState = "ghost"
     this.spacingM = Math.min(1.5, Math.max(0.8, Math.round(this.defaultSpacingM * 10) / 10))
-    this.layout = this.layoutFor(this.spacingM)
+    this.coneCount = COUNT_DEFAULT
+    this.setupPanel.setCount(this.coneCount)
     this.setupPanel.setSpacing(this.spacingM)
-    this.ghost.build(this.layout)
-    this.ghost.setVisible(true)
+    this.rebuildGhost()
+
+    this.shards = new SlalomCoachShards()
+    const hint = addNeonText(this.getSceneObject(), STEP_HINT_TEXT, "Bold", 6, CYAN, {glow: true, spacing: 0.1, name: "StepOntoPadHint", position: vec3.zero()})
+    hint.getSceneObject().enabled = false
+    this.stepHint = hint
 
     this.createEvent("LateUpdateEvent").bind(() => this.tick(getDeltaTime()))
   }
@@ -356,7 +396,37 @@ export class SlalomCoachMain extends BaseScriptComponent {
       const origin = new vec3(eye.x + heading.x * this.ghostAheadCm, this.floorY, eye.z + heading.z * this.ghostAheadCm)
       const transform = this.ghost.getSceneObject().getTransform()
       transform.setWorldPosition(origin)
-      transform.setWorldRotation(quat.angleAxis(Math.atan2(-heading.x, -heading.z), vec3.up()))
+      const yawRotation = quat.angleAxis(Math.atan2(-heading.x, -heading.z), vec3.up())
+      transform.setWorldRotation(yawRotation)
+      // The setup strip rides on the start pad: centred on it, 90 cm up, tilted back to face the wearer.
+      const strip = this.setupPanel.getSceneObject().getTransform()
+      strip.setWorldPosition(new vec3(origin.x, origin.y + STRIP_HEIGHT_CM, origin.z))
+      strip.setWorldRotation(yawRotation.multiply(quat.angleAxis(-STRIP_TILT_BACK_RAD, vec3.right())))
+    }
+  }
+
+  private hideStepHint(): void {
+    if (this.stepHint) {
+      this.stepHint.getSceneObject().enabled = false
+    }
+  }
+
+  /** "STEP ONTO THE PAD" floats above the pad from placing until the skater stands on it. */
+  private updateStepHint(eye: vec3): void {
+    if (!this.stepHint) {
+      return
+    }
+    const show = this.logic.phase === "Idle"
+    const object = this.stepHint.getSceneObject()
+    object.enabled = show
+    if (show) {
+      const transform = object.getTransform()
+      const position = this.drillPoint(0, 0, STEP_HINT_HEIGHT_CM)
+      transform.setWorldPosition(position)
+      const toEye = new vec3(eye.x - position.x, 0, eye.z - position.z)
+      if (toEye.length > 0.001) {
+        transform.setWorldRotation(quat.lookAt(toEye.normalize(), vec3.up()))
+      }
     }
   }
 
@@ -370,6 +440,9 @@ export class SlalomCoachMain extends BaseScriptComponent {
     }
 
     this.stanceCard.setVisible(this.logic.onPad)
+    this.updateStepHint(eye)
+    this.drill.tickEffects(dt)
+    this.shards?.tick(dt)
 
     if (this.logic.highlightedIndex !== this.appliedHighlight) {
       this.appliedHighlight = this.logic.highlightedIndex
@@ -413,12 +486,25 @@ export class SlalomCoachMain extends BaseScriptComponent {
         this.testState.log("drift pulse")
         break
       case "finished": {
-        this.finishCard.setScore(event.cleared, event.total)
+        const states = this.logic.coneStates.slice()
+        this.finishCard.setResult(states)
         const transform = this.finishCard.getSceneObject().getTransform()
         transform.setWorldPosition(this.panelTarget(eye, heading, this.finishCardDistanceCm, this.finishCardDropCm))
         transform.setWorldRotation(this.faceCamera(transform.getWorldPosition(), eye))
         this.cardFollowing = false
         this.finishCard.setVisible(true)
+        if (event.cleared === event.total) {
+          // Clean run only: magenta frame, glitching headline, a wave of flashing poles, neon shards.
+          this.celebrated = true
+          this.finishCard.setCelebrating(true)
+          this.drill.playWave(new vec3(1, 0.239, 0.941), new vec3(1, 1, 1), WAVE_STEP_SEC)
+          this.shards?.burst(this.drillPoint(this.layout.finishS, 0, SHARD_BURST_HEIGHT_CM))
+        } else {
+          this.missPulsed = true
+          const missed: number[] = []
+          states.forEach((state, i) => state === "missed" && missed.push(i))
+          this.drill.pulseMissed(missed)
+        }
         this.testState.log(`finished ${event.cleared}/${event.total}`)
         break
       }
@@ -427,6 +513,10 @@ export class SlalomCoachMain extends BaseScriptComponent {
 
   private applyRunReset(): void {
     this.drill.clearConeColours()
+    this.drill.clearEffects()
+    this.shards?.stop()
+    this.celebrated = false
+    this.missPulsed = false
     this.drill.setPathGlow(0)
     this.pathGlowTimer = 0
     this.cue.clear()
@@ -547,12 +637,12 @@ export class SlalomCoachMain extends BaseScriptComponent {
     this.drillRight = new vec3(-heading.z, 0, heading.x)
   }
 
-  private layoutFor(spacingM: number): DrillLayout {
-    const key = Math.round(spacingM * 10)
+  private layoutFor(coneCount: number, spacingM: number): DrillLayout {
+    const key = coneCount * 1000 + Math.round(spacingM * 10)
     if (!this.layouts[key]) {
       this.layouts[key] = new DrillLayout({
-        coneCount: CONE_COUNT,
-        spacingCm: key * 10,
+        coneCount,
+        spacingCm: Math.round(spacingM * 10) * 10,
         padSizeCm: this.padSizeCm,
         padToFirstConeCm: this.padToFirstConeCm,
         finishPastLastConeCm: this.finishPastLastConeCm,
@@ -665,7 +755,16 @@ export class SlalomCoachMain extends BaseScriptComponent {
       runPhase: placed ? this.logic.phase : "",
       highlightedIndex: placed ? this.logic.highlightedIndex : -1,
       clearedCount: placed ? this.logic.clearedCount : 0,
-      coneCount: CONE_COUNT,
+      coneCount: this.coneCount,
+      stripPosition: this.setupPanel.isVisible() ? toJson(this.setupPanel.getSceneObject().getTransform().getWorldPosition()) : null,
+      stripCountText: this.setupPanel.getCountText(),
+      stepHintVisible: !!this.stepHint && this.stepHint.getSceneObject().enabled,
+      celebrating: this.finishCard.isCelebrating(),
+      finishHeadline: this.finishCard.getHeadlineText(),
+      finishDetail: this.finishCard.getDetailText(),
+      shardCount: this.shards ? this.shards.getVisibleCount() : 0,
+      missPulsed: this.missPulsed,
+      celebrated: this.celebrated,
       cueText: this.cue.getCueText(),
       cueCount: this.cue.getCueCount(),
       cueAlpha: this.cue.getAlpha(),

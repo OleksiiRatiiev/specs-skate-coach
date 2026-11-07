@@ -6,7 +6,7 @@
 
 import {Scenario} from "Leaf.lspkg/Scenarios/scenario/Scenario"
 import {ScenarioConfig} from "Leaf.lspkg/Scenarios/scenario/ScenarioConfig"
-import {allTexts, Checks, CONE_COUNT, CUE_PHRASES, findRequired, fmt, fmtV, frames, Pincher, placeWithPinches, SkaterRig, snap, stepOntoPad, v3, waitForLens} from "./SlalomLeafHarness"
+import {allTexts, Checks, CUE_PHRASES, findRequired, fmt, fmtV, frames, Pincher, placeWithPinches, SkaterRig, snap, stepOntoPad, v3, waitForLens} from "./SlalomLeafHarness"
 import {SlalomCoachSnapshot} from "../Scripts/SlalomCoachTestState"
 
 interface CueSpan {
@@ -26,14 +26,19 @@ export class SlalomC3CuesScenario extends Scenario {
   async run(config?: ScenarioConfig): Promise<void> {
     const speed = parseFloat((config && config.get("speed")) || "60")
     const slow = speed <= 80
-    const c = new Checks(`c3_cues_${speed}`)
+    const N = parseInt((config && config.get("cones")) || "6", 10)
+    // Phases: Middle from cone ceil(N/3)+1, Exit from cone ceil(2N/3)+1. Each cue shows 2 cones early,
+    // when the skater passes the cone two before its phase starts (0-based index = start - 3).
+    const middleIndex = Math.max(0, Math.ceil(N / 3) + 1 - 3)
+    const exitIndex = Math.max(0, Math.ceil((2 * N) / 3) + 1 - 3)
+    const c = new Checks(`c3_cues_${speed}_${N}cones`)
     await waitForLens()
     const rig = new SkaterRig(this, config)
     await frames(3)
     const pincher = new Pincher(config)
     c.info("pinch mode", pincher.mode)
 
-    const placed = await placeWithPinches(pincher, config)
+    const placed = await placeWithPinches(pincher, config, 1.0, N)
     await stepOntoPad(rig)
     const onPad = snap()
     c.ok("on the pad: no cue yet", onPad.cueCount === 0 && onPad.cueDisplayedText === "", `count=${onPad.cueCount} text='${onPad.cueDisplayedText}'`)
@@ -151,10 +156,10 @@ export class SlalomC3CuesScenario extends Scenario {
 
       // Highlight against the real cone stations, and against what is actually lit.
       let expected = 0
-      while (expected < CONE_COUNT && placed.stations[expected] <= state.skaterStationCm) {
+      while (expected < N && placed.stations[expected] <= state.skaterStationCm) {
         expected++
       }
-      const expectedIndex = expected < CONE_COUNT ? expected : -1
+      const expectedIndex = expected < N ? expected : -1
       if (state.highlightedIndex !== expectedIndex) {
         highlightErrors++
         highlightExample = `s=${fmt(state.skaterStationCm)} highlighted=${state.highlightedIndex} expected=${expectedIndex}`
@@ -231,22 +236,26 @@ export class SlalomC3CuesScenario extends Scenario {
     if (spans.length === 3) {
       c.between("Eyes up shows on leaving the pad, at station", spans[0].startStation, 50, 70)
       // A cue can only be seen on the first frame after the crossing, so it may be at most one frame's travel late.
-      c.ok("Bend knees shows on reaching cone 2: at the line, no later than that frame's travel", spans[1].startStation - placed.stations[1] >= 0 && spans[1].startStation - placed.stations[1] <= spans[1].travel + 1, `past=${fmt(spans[1].startStation - placed.stations[1])} frameTravel=${fmt(spans[1].travel)}`)
-      c.ok("Arms forward shows on reaching cone 5: at the line, no later than that frame's travel", spans[2].startStation - placed.stations[4] >= 0 && spans[2].startStation - placed.stations[4] <= spans[2].travel + 1, `past=${fmt(spans[2].startStation - placed.stations[4])} frameTravel=${fmt(spans[2].travel)}`)
+      c.ok(`Bend knees shows 2 cones before the Middle phase (passing cone ${middleIndex + 1}): at the line, no later than that frame's travel`, spans[1].startStation - placed.stations[middleIndex] >= 0 && spans[1].startStation - placed.stations[middleIndex] <= spans[1].travel + 1, `past=${fmt(spans[1].startStation - placed.stations[middleIndex])} frameTravel=${fmt(spans[1].travel)}`)
+      c.ok(`Arms forward shows 2 cones before the Exit phase (passing cone ${exitIndex + 1}): at the line, no later than that frame's travel`, spans[2].startStation - placed.stations[exitIndex] >= 0 && spans[2].startStation - placed.stations[exitIndex] <= spans[2].travel + 1, `past=${fmt(spans[2].startStation - placed.stations[exitIndex])} frameTravel=${fmt(spans[2].travel)}`)
       for (const span of spans) {
         c.ok(`${span.text} really appeared`, span.placed)
         c.near(`${span.text} stays world anchored, cm moved`, span.moved, 0, 0.01)
       }
       if (slow) {
-        for (const span of spans) {
-          c.between(`${span.text} is active for about 2 s`, span.endTime - span.startTime, 1.7, 2.6)
-          c.ok(`${span.text} has faded right out`, span.fadedTime > 0, `faded=${fmt(span.fadedTime)}`)
-          if (span.fadedTime > 0) {
-            c.between(`${span.text} gone within about 2 s plus the fade`, span.fadedTime - span.startTime, 2, 3)
+        spans.forEach((span, i) => {
+          // A cue stays about 3 s, unless the next cue replaces it first (Eyes up is replaced at cone 1).
+          const gap = i + 1 < spans.length ? spans[i + 1].startTime - span.startTime : 99
+          c.between(`${span.text} is active for about 3 s, or until the next cue replaces it`, span.endTime - span.startTime, Math.min(2.7, gap - 0.15), 3.6)
+          if (i === spans.length - 1) {
+            c.ok(`${span.text} has faded right out`, span.fadedTime > 0, `faded=${fmt(span.fadedTime)}`)
+            if (span.fadedTime > 0) {
+              c.between(`${span.text} gone within about 3 s plus the fade`, span.fadedTime - span.startTime, 3, 4)
+            }
           }
-        }
+        })
       } else {
-        c.between("Eyes up replaced early, seconds", spans[0].endTime - spans[0].startTime, 0.3, 2.6)
+        c.between("Eyes up replaced early, seconds", spans[0].endTime - spans[0].startTime, 0.3, 3.6)
       }
     }
 
@@ -262,10 +271,10 @@ export class SlalomC3CuesScenario extends Scenario {
     c.ok("exactly the highlighted pole's halo is lit", haloErrors === 0, `errors=${haloErrors} ${haloExample}`)
     c.ok("exactly the highlighted cone shows the thick 4 cm PoleNext", thickErrors === 0, `errors=${thickErrors} ${thickExample}`)
     c.ok("highlighted pole is the brightest", brightErrors === 0, `errors=${brightErrors}`)
-    c.ok("highlight stepped through every cone in order", JSON.stringify(highlightOrder) === "[0,1,2,3,4,5,-1]", JSON.stringify(highlightOrder))
+    c.ok("highlight stepped through every cone in order", JSON.stringify(highlightOrder) === JSON.stringify([...Array.from({length: N}, (_, k) => k), -1]), JSON.stringify(highlightOrder))
     const end = snap()
     c.info("end", `phase=${end.runPhase} cleared=${end.clearedCount} cones=${JSON.stringify(end.coneStates)} eye=${fmtV(end.cameraPosition)}`)
-    c.ok("this weave cleared every cone", end.clearedCount === 6, `cleared=${end.clearedCount}`)
+    c.ok("this weave cleared every cone", end.clearedCount === N, `cleared=${end.clearedCount}`)
     c.near("rig tracks the camera", rig.trackingErrorCm(), 0, 1)
     c.finish()
   }

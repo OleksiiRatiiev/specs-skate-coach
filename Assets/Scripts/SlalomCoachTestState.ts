@@ -44,6 +44,15 @@ export interface SlalomCoachSnapshot {
   highlightedIndex: number
   clearedCount: number
   coneCount: number
+  stripPosition: {x: number; y: number; z: number} | null
+  stripCountText: string
+  stepHintVisible: boolean
+  celebrating: boolean
+  finishHeadline: string
+  finishDetail: string
+  shardCount: number
+  missPulsed: boolean
+  celebrated: boolean
   cueText: string
   cueCount: number
   cueAlpha: number

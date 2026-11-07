@@ -99,3 +99,19 @@ export function styleSliderLight(slider: Slider): void {
     slider.onInitialized.add(apply)
   }
 }
+
+/** Makes the stock UI Kit button visual fully transparent. The neon plate on top draws the look instead. */
+export function hideButtonVisual(button: Button): void {
+  const apply = () => {
+    const visual = button.visual as RoundedRectangleVisual
+    if (visual) {
+      const clear = new vec4(0, 0, 0, 0)
+      colourVisual(visual, clear, clear, clear, false)
+    }
+  }
+  if (button.initialized) {
+    apply()
+  } else {
+    button.onInitialized.add(apply)
+  }
+}

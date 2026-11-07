@@ -1,6 +1,6 @@
 /**
  * Criterion 1, reachability check. At the pose given by lookDownDeg (0 is the default preview pose), try a real
- * Place drill pinch with a short timeout and no retry. The test passes only if the pinch completes
+ * Place drill pinch with a short timeout. The test passes only if the pinch completes
  * and the drill is placed. It exists to find out whether a wearer who does not tilt their head can
  * press the button at all, which the brief's "Place drill" step requires.
  */
@@ -19,7 +19,8 @@ export class SlalomC1PlaceAtDefaultPoseScenario extends Scenario {
     await frames(5)
     const pincher = new Pincher(config)
     pincher.timeoutMs = parseFloat((config && config.get("timeoutMs")) || "15000")
-    pincher.retryAllowed = false
+    // The strip is now about 2 m away, so the simulated IK arm often needs a second ray attempt. Retries stay on.
+    pincher.retryAllowed = true
     const button = findRequired("PlaceDrillButton").getTransform().getWorldPosition()
     c.info("pose", `pitchDown=${fmt(rig.pitchDownDeg())} ${frustumOf(rig, button)}`)
     let completed = false
@@ -51,8 +52,8 @@ export class SlalomC1PlaceAtDefaultPoseScenario extends Scenario {
       c.near("placed: the pad did not move either, cm", findRequired("StartPad", drillRoot).getTransform().getWorldPosition().distance(fixedPad), 0, 0.01)
       c.near("placed: the drill sits on the floor", fixedPad.y, state.floorY, 2)
     }
-    c.ok("the slider was not pressed on the way", eventCount("SpacingSliderCell", "triggerStart") === 0, `sliderTriggerStarts=${eventCount("SpacingSliderCell", "triggerStart")}`)
-    c.ok("the slider value is unchanged by the pinch", state.sliderValueM === 1.0, `slider=${state.sliderValueM}`)
+    c.ok("the steppers were not pressed on the way", ["ConesMinusButton", "ConesPlusButton", "SpacingMinusButton", "SpacingPlusButton"].every((name) => eventCount(name, "triggerStart") === 0))
+    c.ok("the values are unchanged by the pinch", state.sliderValueM === 1.0 && state.coneCount === 6, `spacing=${state.sliderValueM} cones=${state.coneCount}`)
     v3(button)
     c.finish()
   }

@@ -1,45 +1,44 @@
 /**
- * SlalomCoachFinishCardUI - shows cones cleared next to "Again" and "Move drill".
+ * SlalomCoachFinishCardUI - the end-of-run card: result headline, one icon per cone, a real-numbers
+ * line, and the AGAIN / MOVE DRILL buttons.
  *
- * Owns: its UI Kit layout. Reports: onAgain and onMoveDrill.
- * Must not: keep score or decide when to show. SlalomCoachMain pushes the score in.
+ * Owns: its neon layout, the clean-run celebration look (magenta frame, brief headline glitch).
+ * Reports: onAgain and onMoveDrill.
+ * Must not: keep score or decide when to show. SlalomCoachMain pushes the result in.
  */
 
 import Event, {PublicApi} from "SpectaclesInteractionKit.lspkg/Utils/Event"
-import {BackPlate} from "SpectaclesUIKit.lspkg/Scripts/BackPlate"
-import {FlexDirection} from "SpectaclesUIKit.lspkg/Scripts/Components/Layout2D/Flex/FlexTypes"
-import {addButton, addCentredText, flexChild, makeFlex, makeObject} from "./SlalomCoachPanelKitUI"
+import {AMBER, CYAN, MAGENTA, NeonButton, NeonPlate, Part, WHITE, addConeIcon, addNeonText, withAlpha} from "./SlalomCoachNeon"
+
+const CARD_W = 40
+const CARD_H = 30
+const MAX_CONES = 12
+const GLITCH_EVERY_SEC = 3.4
+const GLITCH_LENGTH_SEC = 0.28
 
 @component
 export class SlalomCoachFinishCardUI extends BaseScriptComponent {
   @ui.label('<span style="color: #60A5FA;">SlalomCoachFinishCardUI - end of run result</span>')
   @ui.separator
-  @ui.group_start("Settings")
-  @input
-  @hint("Caption under the score")
-  scoreCaption: string = "cones cleared"
-
-  @input
-  @hint("Viewing distance the text is scaled for, in cm")
-  @widget(new SliderWidget(40, 110, 5))
-  viewingDistanceCm: number = 70
-
-  @input
-  @hint("Width of each button in cm")
-  @widget(new SliderWidget(6, 16, 0.5))
-  buttonWidthCm: number = 10.5
-
-  @input
-  @hint("Height of each button in cm")
-  @widget(new SliderWidget(3, 10, 0.5))
-  buttonHeightCm: number = 6
-  @ui.group_end
 
   private _onAgain = new Event<void>()
   private _onMoveDrill = new Event<void>()
-  private scoreText: Text
+  private plate: NeonPlate
+  private headline: Text
+  private glitchMagenta: Text
+  private glitchCyan: Text
+  private detail: Text
+  private icons: Part[] = []
+  private againButton: NeonButton
+  private moveButton: NeonButton
+  private scoreText = ""
+  private clean = false
+  private celebrating = false
   private hideWhenReady = false
   private ready = false
+  private glitchClock = 0
+  private glitchStep = 0
+  private glitchActive = false
 
   get onAgain(): PublicApi<void> {
     return this._onAgain.publicApi()
@@ -50,33 +49,36 @@ export class SlalomCoachFinishCardUI extends BaseScriptComponent {
   }
 
   onAwake(): void {
-    const scoreWidth = 11
-    const gap = 1.2
-    const padX = 1.5
-    const width = scoreWidth + this.buttonWidthCm * 2 + gap * 2 + padX * 2
-    const height = this.buttonHeightCm + 4
+    const root = this.sceneObject
+    this.plate = new NeonPlate(root, "CardPlate", CARD_W, CARD_H, CYAN, {chamfer: 2.4, line: 0.22, fillAlpha: 0.1, brackets: true, order: 4})
 
-    this.sceneObject.createComponent("Component.Canvas")
-    const plate = this.sceneObject.createComponent(BackPlate.getTypeName()) as BackPlate
-    plate.size = new vec2(width, height)
+    addNeonText(root, "RUN COMPLETE", "Medium", 1.3, withAlpha(CYAN, 0.9), {spacing: 0.22, position: new vec3(0, 11.6, 0.3), name: "RunCompleteLabel"})
+    this.glitchMagenta = addNeonText(root, "", "Bold", 4.2, withAlpha(MAGENTA, 0.85), {spacing: 0.06, position: new vec3(0, 7, 0.28), name: "HeadlineGlitchMagenta", order: 38})
+    this.glitchCyan = addNeonText(root, "", "Bold", 4.2, withAlpha(CYAN, 0.85), {spacing: 0.06, position: new vec3(0, 7, 0.29), name: "HeadlineGlitchCyan", order: 39})
+    this.headline = addNeonText(root, "", "Bold", 4.2, CYAN, {spacing: 0.06, glow: true, position: new vec3(0, 7, 0.3), name: "Headline"})
+    this.glitchMagenta.enabled = false
+    this.glitchCyan.enabled = false
+    this.detail = addNeonText(root, "", "Medium", 1.25, new vec4(0.92, 1, 1, 0.95), {spacing: 0.08, position: new vec3(0, -3.2, 0.3), name: "DetailLine"})
 
-    const content = makeObject(this.sceneObject, "Content", new vec3(0, 0, 0.6))
-    const row = makeFlex(content, FlexDirection.Row, width, height, {gap, padX})
+    for (let i = 0; i < MAX_CONES; i++) {
+      this.icons.push(addConeIcon(root, `ConeIcon_${i + 1}`, 2.6, 3.2, CYAN, new vec3(0, 1.5, 0.2)))
+    }
 
-    flexChild(row, "Score", scoreWidth, height - 1, (cell) => {
-      const column = makeFlex(cell, FlexDirection.Column, scoreWidth, height - 1, {gap: 0.2})
-      flexChild(column, "ScoreValue", scoreWidth, 3.6, (valueCell) => {
-        this.scoreText = addCentredText(valueCell, "0/6", "Title1", scoreWidth, 3.6, this.viewingDistanceCm, new vec4(1, 1, 1, 1))
-      })
-      flexChild(column, "ScoreCaption", scoreWidth, 1.8, (captionCell) => {
-        addCentredText(captionCell, this.scoreCaption, "Headline2", scoreWidth, 1.8, this.viewingDistanceCm, new vec4(1, 1, 1, 0.75))
-      })
+    this.againButton = new NeonButton(root, "AgainButton", "AGAIN", 16, 6.5, new vec3(-8.8, -9.3, 0.1), {
+      style: "primary",
+      icon: "restart",
+      weight: "SemiBold",
+      capCm: 1.9,
+      spacing: 0.14,
     })
-
-    const againButton = addButton(row, "AgainButton", "Again", this.buttonWidthCm, this.buttonHeightCm, "HeadlineXL", this.viewingDistanceCm, false)
-    const moveButton = addButton(row, "MoveDrillButton", "Move drill", this.buttonWidthCm, this.buttonHeightCm, "HeadlineXL", this.viewingDistanceCm, false)
-    againButton.onTriggerUp.add(() => this._onAgain.invoke())
-    moveButton.onTriggerUp.add(() => this._onMoveDrill.invoke())
+    this.moveButton = new NeonButton(root, "MoveDrillButton", "MOVE DRILL", 16, 6.5, new vec3(8.8, -9.3, 0.1), {
+      style: "white",
+      weight: "SemiBold",
+      capCm: 1.9,
+      spacing: 0.14,
+    })
+    this.againButton.onPress.add(() => this._onAgain.invoke())
+    this.moveButton.onPress.add(() => this._onMoveDrill.invoke())
 
     // Hide only after UI Kit has started, because a disabled object never gets OnStart.
     const firstUpdate = this.createEvent("UpdateEvent")
@@ -87,14 +89,75 @@ export class SlalomCoachFinishCardUI extends BaseScriptComponent {
         this.sceneObject.enabled = false
       }
     })
+    this.createEvent("UpdateEvent").bind(() => this.tickGlitch(getDeltaTime()))
   }
 
-  setScore(cleared: number, total: number): void {
-    this.scoreText.text = `${cleared}/${total}`
+  /** states: one entry per cone in order, "cleared" or anything else for missed. */
+  setResult(states: string[]): void {
+    const total = states.length
+    const cleared = states.filter((s) => s === "cleared").length
+    this.clean = cleared === total
+    this.scoreText = `${cleared}/${total}`
+    const title = this.clean ? "CLEAN RUN" : "NICE RUN"
+    this.headline.text = title
+    this.glitchMagenta.text = title
+    this.glitchCyan.text = title
+
+    const missed: number[] = []
+    states.forEach((s, i) => {
+      if (s !== "cleared") {
+        missed.push(i + 1)
+      }
+    })
+    this.detail.text = this.clean
+      ? `${cleared}/${total} cones · eyes up all the way`
+      : `${cleared}/${total} cones · ${missed.length === 1 ? `cone ${missed[0]} is` : `cones ${this.joinList(missed)} are`} marked on the drill`
+
+    const pitch = Math.min(3.6, (CARD_W - 8) / total)
+    const scale = Math.min(1, pitch / 3.6)
+    this.icons.forEach((icon, i) => {
+      icon.object.enabled = i < total
+      if (i < total) {
+        icon.object.getTransform().setLocalPosition(new vec3((i - (total - 1) / 2) * pitch, 1.5, 0.2))
+        icon.object.getTransform().setLocalScale(new vec3(scale, scale, 1))
+        icon.material.mainPass.baseColor = states[i] === "cleared" ? CYAN : AMBER
+      }
+    })
+    this.setCelebrating(false)
+  }
+
+  /** Clean-run celebration look: magenta frame, headline glitches briefly every few seconds. */
+  setCelebrating(on: boolean): void {
+    this.celebrating = on
+    this.plate.setColor(on ? MAGENTA : CYAN)
+    this.plate.setGlow(on ? 1.5 : 1)
+    this.headline.outlineSettings.fill.color = withAlpha(on ? MAGENTA : CYAN, 0.35)
+    this.glitchClock = 0
+    this.endGlitch()
   }
 
   getScoreText(): string {
-    return this.scoreText ? this.scoreText.text : ""
+    return this.scoreText
+  }
+
+  getHeadlineText(): string {
+    return this.headline ? this.headline.text : ""
+  }
+
+  getDetailText(): string {
+    return this.detail ? this.detail.text : ""
+  }
+
+  isCelebrating(): boolean {
+    return this.celebrating
+  }
+
+  isGlitching(): boolean {
+    return this.glitchActive
+  }
+
+  getFrameColor(): vec4 {
+    return this.plate.getColor()
   }
 
   setVisible(visible: boolean): void {
@@ -106,5 +169,44 @@ export class SlalomCoachFinishCardUI extends BaseScriptComponent {
 
   isVisible(): boolean {
     return this.sceneObject.enabled && !this.hideWhenReady
+  }
+
+  private joinList(values: number[]): string {
+    return values.length <= 1 ? `${values[0]}` : `${values.slice(0, -1).join(", ")} and ${values[values.length - 1]}`
+  }
+
+  private tickGlitch(dt: number): void {
+    if (!this.celebrating) {
+      return
+    }
+    this.glitchClock += dt
+    const phase = this.glitchClock % GLITCH_EVERY_SEC
+    if (phase < GLITCH_LENGTH_SEC && this.glitchClock > 0.9) {
+      this.glitchActive = true
+      this.glitchStep += dt
+      if (this.glitchStep > 0.04) {
+        this.glitchStep = 0
+        const jitter = () => (Math.random() - 0.5) * 1.1
+        this.glitchMagenta.enabled = true
+        this.glitchCyan.enabled = true
+        this.glitchMagenta.getSceneObject().getTransform().setLocalPosition(new vec3(-0.5 + jitter(), 7 + jitter() * 0.3, 0.28))
+        this.glitchCyan.getSceneObject().getTransform().setLocalPosition(new vec3(0.5 + jitter(), 7 + jitter() * 0.3, 0.29))
+        this.headline.getSceneObject().getTransform().setLocalPosition(new vec3(jitter() * 0.5, 7, 0.3))
+        this.headline.textFill.color = Math.random() < 0.3 ? WHITE : CYAN
+      }
+    } else if (this.glitchActive) {
+      this.endGlitch()
+    }
+  }
+
+  private endGlitch(): void {
+    this.glitchActive = false
+    if (!this.headline) {
+      return
+    }
+    this.glitchMagenta.enabled = false
+    this.glitchCyan.enabled = false
+    this.headline.getSceneObject().getTransform().setLocalPosition(new vec3(0, 7, 0.3))
+    this.headline.textFill.color = CYAN
   }
 }

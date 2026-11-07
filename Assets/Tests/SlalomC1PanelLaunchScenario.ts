@@ -1,15 +1,13 @@
 /**
- * Criterion 1, part 1: what is on screen at launch. No pinch. Measures the setup panel's size, distance,
- * drop and side, its texts and controls, whether the slider and Place drill button are inside the real
- * camera frustum and within the simulated arm's reach, and the ghost drill (from launch, about 2 m
- * ahead, turning with the view). Nothing in the scene is moved to make a check pass.
+ * Criterion 1, part 1: what is on screen at launch. No pinch. Measures the setup strip anchored to the
+ * ghost's start pad (centred on it, about 90 cm up, tilted back about 30 degrees, moving with the ghost),
+ * its two stepper rows and PLACE DRILL button, text sizes and neon colours, and the ghost drill (from launch,
+ * about 2 m ahead, turning with the view). Nothing in the scene is moved to make a check pass.
  */
 
 import {Scenario} from "Leaf.lspkg/Scenarios/scenario/Scenario"
 import {ScenarioConfig} from "Leaf.lspkg/Scenarios/scenario/ScenarioConfig"
 import {findInteractableByName} from "Leaf.lspkg/Interactors/InteractableUtils"
-import {Slider} from "SpectaclesUIKit.lspkg/Scripts/Components/Slider/Slider"
-import {RoundedRectangle} from "SpectaclesUIKit.lspkg/Scripts/Visuals/RoundedRectangle/RoundedRectangle"
 import {findSceneObjectByName, sleep} from "Leaf.lspkg/Utils/common/Utils"
 import {
   allTexts,
@@ -24,6 +22,7 @@ import {
   fmtV,
   frames,
   frustumOf,
+  isUnder,
   luminance,
   SkaterRig,
   snap,
@@ -31,15 +30,11 @@ import {
   waitForLens,
 } from "./SlalomLeafHarness"
 
-function isUnder(object: SceneObject, ancestorName: string): boolean {
-  let current: SceneObject | null = object
-  while (current) {
-    if (current.name === ancestorName) {
-      return true
-    }
-    current = current.hasParent() ? current.getParent() : null
-  }
-  return false
+const BUTTONS = ["ConesMinusButton", "ConesPlusButton", "SpacingMinusButton", "SpacingPlusButton", "PlaceDrillButton"]
+
+/** Height of capital letters in cm for a Text made by the neon kit (size 100, scaled). */
+function capHeightCm(text: Text): number {
+  return text.getSceneObject().getTransform().getWorldScale().y * (text.size / 43.886) * 0.7
 }
 
 @component
@@ -49,161 +44,91 @@ export class SlalomC1PanelLaunchScenario extends Scenario {
     await waitForLens()
     const rig = new SkaterRig(this, config)
     await frames(5)
-    c.info("camera", `eye=${fmtV(rig.actualEye())} pitchDown=${fmt(rig.pitchDownDeg())} basePitchDown=${fmt(-rig.basePitchDeg)} fovDeg=${fmt((rig.camera.fov * 180) / Math.PI)} aspect=${fmt(rig.camera.aspect)}`)
+    c.info("camera", `eye=${fmtV(rig.actualEye())} pitchDown=${fmt(rig.pitchDownDeg())} fovDeg=${fmt((rig.camera.fov * 180) / Math.PI)}`)
     c.near("rig tracks the camera", rig.trackingErrorCm(), 0, 1)
 
     const state = snap()
     c.ok("launch: setup state is ghost, drill not placed", state.setupState === "ghost" && !state.drillVisible, `state=${state.setupState} drill=${state.drillVisible}`)
-    c.ok("launch: panel shows", state.setupPanelVisible && findRequired("SetupPanel").isEnabledInHierarchy)
-    c.ok("launch: panel has the lazy follow behaviour", state.panelHasFollowBehavior)
+    c.ok("launch: strip shows", state.setupPanelVisible && findRequired("SetupPanel").isEnabledInHierarchy)
 
-    // The controls the brief names, and none of the old ones.
-    for (const old of ["EasyButton", "StandardButton", "PlaceHereButton"]) {
-      c.ok(`launch: old control ${old} is gone`, !findSceneObjectByName(old))
+    // The old floating card is gone entirely.
+    for (const old of ["SpacingSliderCell", "GrabBar", "Backing", "EasyButton", "StandardButton"]) {
+      c.ok(`launch: old element ${old} is gone`, !findSceneObjectByName(old))
     }
-    for (const name of ["SpacingSliderCell", "PlaceDrillButton", "SpacingValue", "GrabBar", "Backing"]) {
-      c.ok(`launch: ${name} exists`, !!findSceneObjectByName(name))
-    }
-    const sliderObject = findRequired("SpacingSliderCell")
-    const slider = sliderObject.getComponent(Slider.getTypeName()) as Slider
-    const button = buttonNamed("PlaceDrillButton")
-    c.ok("launch: slider is a UI Kit Slider with a live Interactable", !!slider && !!findInteractableByName("SpacingSliderCell", undefined, true))
-    c.ok("launch: Place drill is a UI Kit Button with a live Interactable", !!button && !!findInteractableByName("PlaceDrillButton", undefined, true))
-    c.ok("launch: Place drill is not a toggle and is active", button.isOn === false && button.inactive === false)
-    c.ok("launch: slider is segmented into 8 values", slider.numberOfSegments === 8 && slider.segmented, `segments=${slider.numberOfSegments} segmented=${slider.segmented}`)
-    c.near("launch: slider starts at 1.0 m (value 2/7)", slider.currentValue, 2 / 7, 0.001)
+    c.ok("launch: no follow behaviour left on the strip", !state.panelHasFollowBehavior && !state.panelFollowing)
 
-    // Texts, read from the real Text components under the panel.
-    const panelTexts = allTexts().filter((text) => text.getSceneObject().isEnabledInHierarchy && isUnder(text.getSceneObject(), "SetupPanel"))
-    const shown = panelTexts.map((text) => text.text)
-    c.info("panel texts", JSON.stringify(shown))
-    for (const wanted of ["Slalom Coach AR", "Set spacing, then place the drill", "Cone spacing: 1.0 m", "Place drill"]) {
-      const count = shown.filter((text) => text === wanted).length
+    // Controls: UI Kit buttons, at least 6 cm, with live interactables.
+    for (const name of BUTTONS) {
+      const object = findRequired(name)
+      const button = buttonNamed(name)
+      const widthCm = button.size.x * object.getTransform().getWorldScale().x
+      const heightCm = button.size.y * object.getTransform().getWorldScale().y
+      c.ok(`launch: ${name} is a UI Kit Button with a live Interactable`, !!button && !!findInteractableByName(name, undefined, true))
+      c.ok(`launch: ${name} is at least 6 cm`, widthCm >= 5.99 && heightCm >= 5.99, `size=${fmt(widthCm)} x ${fmt(heightCm)}`)
+      c.ok(`launch: ${name} is not a toggle and is active`, button.isOn === false && button.inactive === false)
+    }
+
+    // Texts.
+    const stripTexts = allTexts().filter((text) => text.getSceneObject().isEnabledInHierarchy && isUnder(text.getSceneObject(), "SetupPanel"))
+    c.info("strip texts", JSON.stringify(stripTexts.map((text) => text.text)))
+    for (const wanted of ["6", "1.0 m", "CONES", "CONE SPACING", "PLACE DRILL"]) {
+      const count = stripTexts.filter((text) => text.text === wanted).length
       c.ok(`launch: text '${wanted}' shows once`, count === 1, `count=${count}`)
     }
-    c.ok("launch: the snapshot's slider text matches the Text component", state.sliderText === "Cone spacing: 1.0 m" && state.sliderValueM === 1.0, `text='${state.sliderText}' value=${state.sliderValueM}`)
-    for (const text of panelTexts) {
+    c.ok("launch: snapshot values are 6 cones and 1.0 m", state.stripCountText === "6" && state.sliderText === "1.0 m" && state.coneCount === 6 && state.sliderValueM === 1.0, `count='${state.stripCountText}' text='${state.sliderText}'`)
+    for (const text of stripTexts) {
       const fill = text.textFill.color
-      c.ok(`launch: text '${text.text}' is light, so it shows on the additive display`, luminance(fill) > 0.7 && fill.w > 0.5, `colour=(${fmt(fill.x)},${fmt(fill.y)},${fmt(fill.z)},${fmt(fill.w)})`)
+      c.ok(`launch: text '${text.text}' is light, so it shows on the additive display`, luminance(fill) > 0.5 && fill.w > 0.5, `colour=(${fmt(fill.x)},${fmt(fill.y)},${fmt(fill.z)},${fmt(fill.w)})`)
+    }
+    for (const value of stripTexts.filter((text) => text.text === "6" || text.text === "1.0 m")) {
+      c.between(`launch: value '${value.text}' is about 5 cm tall`, capHeightCm(value), 4.5, 5.5)
+      const fill = value.textFill.color
+      c.ok(`launch: value '${value.text}' is neon cyan #3FF0FF`, Math.abs(fill.x - 0.247) < 0.03 && Math.abs(fill.y - 0.941) < 0.03 && Math.abs(fill.z - 1) < 0.03, `colour=(${fmt(fill.x)},${fmt(fill.y)},${fmt(fill.z)})`)
     }
 
-    // Panel placement from the snapshot and from the real objects.
-    const eye = rig.actualEye()
-    const panelPosition = v3(state.panelPosition)
-    const horizontal = new vec3(panelPosition.x - eye.x, 0, panelPosition.z - eye.z).length
-    c.between("panel: about 60 cm ahead, measured along the floor", horizontal, 55, 65)
-    c.between("panel: about 60 cm away in a straight line (plus or minus 10 percent)", state.panelDistanceFromEyeCm, 54, 66)
-    c.between("panel: about 25 cm below eye level", state.panelBelowEyeCm, 20, 30)
-    c.between("panel: slightly to the left, cm", state.panelLeftOfViewCm, 1, 15)
-    c.near("snapshot distance matches the real transform", panelPosition.distance(eye), state.panelDistanceFromEyeCm, 0.5)
-    const toEye = eye.sub(panelPosition).normalize()
-    c.ok("panel: faces the wearer", v3(state.panelFacing).dot(toEye) > 0.9, `facingDotToEye=${fmt(v3(state.panelFacing).dot(toEye))}`)
-    const backingObject = findRequired("Backing")
-    const backingBounds = boundsOf(backingObject)
-    const backingRect = backingObject.getComponent(RoundedRectangle.getTypeName()) as RoundedRectangle
-    const backingScale = backingObject.getTransform().getWorldScale()
-    const rectWidth = backingRect.size.x * backingScale.x
-    const rectHeight = backingRect.size.y * backingScale.y
-    c.info("backing", `componentSize=(${fmt(backingRect.size.x)},${fmt(backingRect.size.y)}) worldScale=${fmtV(backingScale)} widthInWorld=${fmt(rectWidth)} heightInWorld=${fmt(rectHeight)} aabbSize=${fmtV(backingBounds.size)} colour=(${fmt(backingRect.backgroundColor.x)},${fmt(backingRect.backgroundColor.y)},${fmt(backingRect.backgroundColor.z)},${fmt(backingRect.backgroundColor.w)})`)
-    c.near("panel: about 30 cm wide (Backing component size times its world scale)", rectWidth, 30, 2)
-    c.ok("panel: light, semi-opaque background", luminance(backingRect.backgroundColor) > 0.5 && backingRect.backgroundColor.w > 0.3 && backingRect.backgroundColor.w < 0.95, `luminance=${fmt(luminance(backingRect.backgroundColor))} alpha=${fmt(backingRect.backgroundColor.w)}`)
-    for (const name of ["GrabBar"]) {
-      const bar = findRequired(name)
-      const rect = bar.getComponent(RoundedRectangle.getTypeName()) as RoundedRectangle
-      c.info(name, `size=(${fmt(rect.size.x)},${fmt(rect.size.y)}) colour=(${fmt(rect.backgroundColor.x)},${fmt(rect.backgroundColor.y)},${fmt(rect.backgroundColor.z)},${fmt(rect.backgroundColor.w)})`)
-    }
+    // Anchored to the ghost's start pad: centred on it, about 90 cm up, tilted back about 30 degrees.
+    const ghostPad = v3(state.ghostPadPosition)
+    this.checkStrip(c, snap(), "at launch")
 
-    // Gap between the slider and Place drill, measured on the panel's own up axis.
-    const buttonObject = findRequired("PlaceDrillButton")
-    const up = sliderObject.getTransform().up
-    const centreDistance = Math.abs(sliderObject.getTransform().getWorldPosition().sub(buttonObject.getTransform().getWorldPosition()).dot(up))
-    const sliderHalf = (slider.size.y * sliderObject.getTransform().getWorldScale().y) / 2
-    const buttonHalf = (button.size.y * buttonObject.getTransform().getWorldScale().y) / 2
-    const gap = centreDistance - sliderHalf - buttonHalf
-    c.info("slider to button", `centreDistance=${fmt(centreDistance)} sliderHeight=${fmt(sliderHalf * 2)} buttonHeight=${fmt(buttonHalf * 2)} gap=${fmt(gap)}`)
-    c.ok("panel: a clear gap of at least 3 cm between the slider and Place drill", gap >= 3, `gap=${fmt(gap)}`)
-    c.near("panel: the gap is the builder's 4 cm", gap, 4, 0.2)
-
-    // The real colliders that decide what a pinch lands on. If the slider's collider reaches down into the
-    // Place drill button's collider, a pinch aimed at one can press the other (defect D1).
-    const colliderRange = (name: string): {low: number; high: number; text: string} => {
-      const interactable = findInteractableByName(name, undefined, true)
-      const reference = findRequired(name).getTransform().getWorldPosition().dot(up)
-      let low = 1e9
-      let high = -1e9
-      const parts: string[] = []
-      for (const collider of interactable.colliders) {
-        const shape: any = collider.shape
-        const transform = collider.getSceneObject().getTransform()
-        const centre = transform.getWorldPosition().dot(up)
-        const scale = transform.getWorldScale()
-        const size: vec3 = shape && shape.size ? shape.size : new vec3(0, 0, 0)
-        const half = (Math.abs(size.y * scale.y) + Math.abs(size.x * scale.x) * Math.abs(transform.right.dot(up)) + Math.abs(size.z * scale.z) * Math.abs(transform.back.dot(up))) / 2
-        low = Math.min(low, centre - half)
-        high = Math.max(high, centre + half)
-        parts.push(`${collider.getSceneObject().name}[${shape ? shape.isOfType("Box") ? "box" : "other" : "none"} size=${fmtV(size)} scale=${fmtV(scale)} enabled=${collider.enabled}]`)
-      }
-      return {low: low - reference, high: high - reference, text: parts.join(" ")}
+    // Frustum (information at the default pose, asserted when the wearer looks a little down).
+    const stripCentre = v3(snap().stripPosition)
+    const view = rig.viewOf(stripCentre)
+    c.info("frustum", `${fmtV(stripCentre)} ${frustumOf(rig, stripCentre)} distance=${fmt(stripCentre.distance(rig.actualEye()))}`)
+    if (rig.pitchDownDeg() >= 4) {
+      c.ok("launch: strip centre is inside the camera view", view.inView, `screen=(${fmt(view.x)},${fmt(view.y)})`)
     }
-    const sliderRange = colliderRange("SpacingSliderCell")
-    const buttonRange = colliderRange("PlaceDrillButton")
-    c.info("slider colliders", `${sliderRange.text} verticalExtentAroundCentre=[${fmt(sliderRange.low)},${fmt(sliderRange.high)}]`)
-    c.info("button colliders", `${buttonRange.text} verticalExtentAroundCentre=[${fmt(buttonRange.low)},${fmt(buttonRange.high)}]`)
-    const sliderBottom = sliderObject.getTransform().getWorldPosition().dot(up) + sliderRange.low
-    const buttonTop = buttonObject.getTransform().getWorldPosition().dot(up) + buttonRange.high
-    c.ok("colliders: the slider's collider stops above the Place drill button's collider", sliderBottom > buttonTop, `sliderColliderBottom-buttonColliderTop=${fmt(sliderBottom - buttonTop)} cm (positive means a clear gap)`)
+    void ghostPad
 
-    // Frustum and reach. These are measurements of the real camera and the simulated arm, and are asserted
-    // because a person who cannot see a control cannot use it.
-    const controls: {name: string; object: SceneObject}[] = [
-      {name: "SpacingSliderCell", object: sliderObject},
-      {name: "PlaceDrillButton", object: buttonObject},
-      {name: "GrabBar", object: findRequired("GrabBar")},
-      {name: "SpacingValue", object: findRequired("SpacingValue")},
-    ]
-    for (const control of controls) {
-      const point = control.object.getTransform().getWorldPosition()
-      c.info(`frustum ${control.name}`, `${fmtV(point)} ${frustumOf(rig, point)}`)
-    }
-    for (const control of [controls[0], controls[1]]) {
-      const point = control.object.getTransform().getWorldPosition()
-      const view = rig.viewOf(point)
-      c.ok(`frustum: ${control.name} centre is inside the camera view`, view.inView, `screen=(${fmt(view.x)},${fmt(view.y)}) cameraPitchDown=${fmt(rig.pitchDownDeg())}`)
-      // The smallest extra look-down that brings the centre to 90 percent of the frame height, so the cost is known.
-      let needed = 0
-      for (let extra = 0; extra <= 40; extra += 1) {
-        const look = rig.pitchDownDeg() + extra
-        const local = point.sub(eye)
-        const rad = (look * Math.PI) / 180
-        const angleBelowEyeLine = Math.atan2(eye.y - point.y, new vec3(local.x, 0, local.z).length) // radians below horizontal
-        const offAxis = angleBelowEyeLine - rad
-        if (Math.abs(offAxis) < (rig.camera.fov / 2) * 0.9) {
-          needed = extra
-          break
-        }
-      }
-      c.info(`look-down needed for ${control.name}`, `extra=${needed} deg beyond the default pitch, so total ${fmt(rig.pitchDownDeg() + needed)} deg`)
-      const distance = point.distance(eye)
-      c.info(`reach ${control.name}`, `distance from the eye=${fmt(distance)} cm (the earlier IK clamp was about 67.5 cm from the shoulder)`)
-    }
-
-    // Ghost: from launch, at the slider's value, about 2 m ahead and turning with the view.
+    // Ghost: from launch, six cones at the default spacing, about 2 m ahead and turning with the view.
     const ghost = new DrillParts("GhostDrill")
     c.ok("ghost: visible from launch", state.ghostVisible && findRequired("GhostDrill").isEnabledInHierarchy)
-    c.near("ghost: at the slider's spacing, cm", state.ghostSpacingCm, 100, 0.001)
+    c.near("ghost: at the default spacing, cm", state.ghostSpacingCm, 100, 0.001)
     await this.checkGhost(c, rig, ghost, "at launch", 100)
 
     const before = ghost.part("StartPad").getTransform().getWorldPosition()
     rig.turnRight(60)
-    await sleep(1500)
+    await sleep(1000)
     const after = ghost.part("StartPad").getTransform().getWorldPosition()
     c.ok("ghost: turned 60 degrees, the pad moved with the view", before.distance(after) > 100, `moved=${fmt(before.distance(after))} cm`)
     await this.checkGhost(c, rig, ghost, "after turning 60 degrees right", 100)
+    this.checkStrip(c, snap(), "after turning 60 degrees: the strip moved with the ghost")
     rig.turnRight(-100)
-    await sleep(1500)
+    await sleep(1000)
     await this.checkGhost(c, rig, ghost, "after turning 40 degrees left of the start", 100)
+    this.checkStrip(c, snap(), "after turning back")
     c.near("rig tracks the camera", rig.trackingErrorCm(), 0, 1)
     c.finish()
+  }
+
+  private checkStrip(c: Checks, state: ReturnType<typeof snap>, when: string): void {
+    const ghostPad = v3(state.ghostPadPosition)
+    const strip = v3(state.stripPosition)
+    const facing = v3(state.panelFacing)
+    c.near(`strip ${when}: centred on the pad (x), cm`, strip.x, ghostPad.x, 0.5)
+    c.near(`strip ${when}: centred on the pad (z), cm`, strip.z, ghostPad.z, 0.5)
+    c.near(`strip ${when}: about 90 cm above the pad, cm`, strip.y - ghostPad.y, 90, 1)
+    // Facing +Z tilted back by 30 degrees: the normal points up by sin(30) = 0.5.
+    c.near(`strip ${when}: tilted back about 30 degrees (normal.y)`, facing.y, 0.5, 0.05)
   }
 
   private async checkGhost(c: Checks, rig: SkaterRig, ghost: DrillParts, when: string, spacing: number): Promise<void> {

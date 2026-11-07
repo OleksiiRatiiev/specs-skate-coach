@@ -123,17 +123,25 @@ export class SlalomCoachDrillView extends BaseScriptComponent {
   private poleObjects: SceneObject[] = []
   private pathMaterial: Material | null = null
   private pathHaloMaterial: Material | null = null
-  private builtSpacing = -1
+  private builtKey = ""
+  private flashObjects: SceneObject[] = []
+  private flashMaterials: Material[] = []
+  private waveColors: vec3[] = [new vec3(1, 0.24, 0.94), new vec3(1, 1, 1)]
+  private flashes: {index: number; delay: number; age: number; duration: number; kind: "wave" | "miss"}[] = []
 
   /** Rebuilds the geometry when the spacing changes. Safe to call repeatedly. */
   build(layout: DrillLayout): void {
-    if (this.builtSpacing === layout.config.spacingCm && this.partsRoot) {
+    const key = `${layout.config.coneCount}@${layout.config.spacingCm}`
+    if (this.builtKey === key && this.partsRoot) {
       return
     }
     if (this.partsRoot) {
       this.partsRoot.destroy()
     }
-    this.builtSpacing = layout.config.spacingCm
+    this.builtKey = key
+    this.flashObjects = []
+    this.flashMaterials = []
+    this.flashes = []
     this.coneMaterials = []
     this.poleMaterials = []
     this.poleHalos = []
@@ -154,6 +162,7 @@ export class SlalomCoachDrillView extends BaseScriptComponent {
     const thickRadius = (this.poleThicknessCm * this.highlightThicknessFactor) / 2
     const thickMesh = buildFrustumMesh(thickRadius, thickRadius, this.poleHeightCm, POLE_SEGMENTS)
     const haloMesh = buildFrustumMesh(thickRadius * 2.2, thickRadius * 2.2, this.poleHeightCm, POLE_SEGMENTS)
+    const flashMesh = buildFrustumMesh(thickRadius * 1.6, thickRadius * 1.6, this.poleHeightCm, POLE_SEGMENTS)
 
     for (let i = 0; i < layout.coneS.length; i++) {
       const position = new vec3(0, 0, -layout.coneS[i])
@@ -161,6 +170,10 @@ export class SlalomCoachDrillView extends BaseScriptComponent {
       const pole = this.addPart(root, `Pole_${i + 1}`, poleMesh, this.poleColor, 1, position)
       const thick = this.addPart(root, `PoleNext_${i + 1}`, thickMesh, this.poleHighlightColor, 1, position)
       const halo = this.addPart(root, `PoleHalo_${i + 1}`, haloMesh, this.poleHighlightColor, 0.3, position)
+      const flash = this.addPart(root, `PoleFlash_${i + 1}`, flashMesh, this.poleHighlightColor, 0, position)
+      flash.object.enabled = false
+      this.flashObjects.push(flash.object)
+      this.flashMaterials.push(flash.material)
       thick.object.enabled = false
       halo.object.enabled = false
       this.poleThick.push(thick.object)
@@ -209,6 +222,78 @@ export class SlalomCoachDrillView extends BaseScriptComponent {
     const mixed = vec3.lerp(this.pathColor, this.pathBrightColor, level)
     this.pathMaterial.mainPass.baseColor = this.tint(mixed, 1)
     this.pathHaloMaterial.mainPass.baseColor = this.tint(mixed, 0.22 + 0.25 * level)
+  }
+
+  /** Neon wave of flashing poles from the first cone to the last (clean-run celebration). */
+  playWave(colorA: vec3, colorB: vec3, stepSec: number): void {
+    this.waveColors = [colorA, colorB]
+    for (let i = 0; i < this.flashObjects.length; i++) {
+      this.flashes.push({index: i, delay: i * stepSec, age: 0, duration: 0.55, kind: "wave"})
+    }
+  }
+
+  /** One amber pulse on each missed cone (and its pole). */
+  pulseMissed(indices: number[]): void {
+    for (const index of indices) {
+      this.flashes.push({index, delay: 0, age: 0, duration: 0.9, kind: "miss"})
+    }
+  }
+
+  isFlashing(): boolean {
+    return this.flashes.length > 0
+  }
+
+  /** Advances any running flashes. Call every frame. */
+  tickEffects(dt: number): void {
+    if (this.flashes.length === 0) {
+      return
+    }
+    const alive: typeof this.flashes = []
+    for (const f of this.flashes) {
+      f.age += dt
+      const t = f.age - f.delay
+      const object = this.flashObjects[f.index]
+      if (!object) {
+        continue
+      }
+      if (t < 0) {
+        alive.push(f)
+        continue
+      }
+      if (t >= f.duration) {
+        object.enabled = false
+        this.coneObjects[f.index].getTransform().setLocalScale(vec3.one())
+        continue
+      }
+      const u = t / f.duration
+      const envelope = Math.sin(u * Math.PI)
+      object.enabled = true
+      if (f.kind === "wave") {
+        const colour = vec3.lerp(this.waveColors[0], this.waveColors[1], u)
+        this.flashMaterials[f.index].mainPass.baseColor = new vec4(colour.x, colour.y, colour.z, 0.95 * envelope)
+      } else {
+        this.flashMaterials[f.index].mainPass.baseColor = new vec4(this.coneMissedColor.x, this.coneMissedColor.y, this.coneMissedColor.z, 0.85 * envelope)
+        const grow = 1 + 0.35 * envelope
+        this.coneObjects[f.index].getTransform().setLocalScale(new vec3(grow, grow, grow))
+      }
+      alive.push(f)
+    }
+    this.flashes = alive
+  }
+
+  /** Stops every flash and puts cones back to normal size. */
+  clearEffects(): void {
+    this.flashes = []
+    for (const object of this.flashObjects) {
+      object.enabled = false
+    }
+    for (const cone of this.coneObjects) {
+      cone.getTransform().setLocalScale(vec3.one())
+    }
+  }
+
+  getConeCount(): number {
+    return this.coneObjects.length
   }
 
   getPoleThicknessCm(): number {

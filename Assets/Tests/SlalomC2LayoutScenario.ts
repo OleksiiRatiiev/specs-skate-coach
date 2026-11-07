@@ -11,7 +11,6 @@ import {
   boundsOf,
   Checks,
   colorOf,
-  CONE_COUNT,
   findRequired,
   fmt,
   fmtV,
@@ -32,14 +31,15 @@ export class SlalomC2LayoutScenario extends Scenario {
   async run(config?: ScenarioConfig): Promise<void> {
     const spacing = parseFloat((config && config.get("spacing")) || "1.0")
     const cm = Math.round(spacing * 100)
-    const c = new Checks(`c2_layout_${spacing}`)
+    const CONE_COUNT = parseInt((config && config.get("cones")) || "6", 10)
+    const c = new Checks(`c2_layout_${spacing}_${CONE_COUNT}cones`)
     await waitForLens()
     const rig = new SkaterRig(this, config)
     await frames(5)
     const pincher = new Pincher(config)
     c.info("pinch mode", `${pincher.mode} spacing wanted=${spacing}`)
 
-    const placed = await placeWithPinches(pincher, config, spacing)
+    const placed = await placeWithPinches(pincher, config, spacing, CONE_COUNT)
     await frames(5)
     const state = snap()
     const parts = placed.parts
@@ -49,14 +49,15 @@ export class SlalomC2LayoutScenario extends Scenario {
     const station = (p: vec3): number => p.sub(pad).dot(forward)
     const lateral = (p: vec3): number => p.sub(pad).dot(right)
 
-    c.ok("placed with the slider's value", state.setupState === "placed" && state.sliderValueM === spacing && state.spacingCm === cm, `state=${state.setupState} slider=${state.sliderValueM} spacing=${state.spacingCm}`)
+    c.ok("placed with the slider's value", state.setupState === "placed" && state.sliderValueM === spacing && state.spacingCm === cm, `state=${state.setupState} slider=${state.sliderValueM} spacing=${state.spacingCm} cones=${state.coneCount}`)
+    c.ok("placed with the stepper count", state.coneCount === CONE_COUNT && parts.cone(CONE_COUNT - 1).isEnabledInHierarchy, `cones=${state.coneCount}`)
     c.near("basis: right is forward x up", forward.cross(vec3.up()).distance(right), 0, 0.001)
 
-    // Six cones, exactly the slider's distance apart.
+    // The chosen number of cones, exactly the slider's distance apart.
     for (let i = 0; i < CONE_COUNT; i++) {
       c.ok(`cone ${i + 1} enabled`, parts.cone(i).isEnabledInHierarchy)
     }
-    c.ok("no seventh cone", !this.hasPart(parts.root, "Cone_7"))
+    c.ok("no extra cone", !this.hasPart(parts.root, `Cone_${CONE_COUNT + 1}`))
     for (let i = 1; i < CONE_COUNT; i++) {
       c.near(`cones ${i} to ${i + 1}: real transform spacing, cm`, parts.cone(i).getTransform().getWorldPosition().distance(parts.cone(i - 1).getTransform().getWorldPosition()), cm, 0.01)
       c.near(`cones ${i} to ${i + 1}: rendered bounds spacing, cm`, boundsOf(parts.cone(i)).centre.distance(boundsOf(parts.cone(i - 1)).centre), cm, 0.05)
@@ -69,7 +70,7 @@ export class SlalomC2LayoutScenario extends Scenario {
     // Cone and pole sizes from the vertices.
     const next = parts.nextPoles()
     c.ok("only cone 1's thick PoleNext shows", JSON.stringify(next) === "[0]", `next=[${next}]`)
-    c.ok("cone 1's thin Pole is switched off, the others' are on", !parts.pole(0).enabled && [1, 2, 3, 4, 5].every((i) => parts.pole(i).enabled))
+    c.ok("cone 1's thin Pole is switched off, the others' are on", !parts.pole(0).enabled && Array.from({length: CONE_COUNT - 1}, (_, k) => k + 1).every((i) => parts.pole(i).enabled))
     for (let i = 0; i < CONE_COUNT; i++) {
       const cone = meshExtents(parts.cone(i))
       const thin = meshExtents(parts.pole(i))
@@ -94,7 +95,7 @@ export class SlalomC2LayoutScenario extends Scenario {
       c.ok(`pole 1's PoleNext is brighter than pole ${i + 1} by at least 0.3 luminance`, luminance(nextColour) - luminance(colorOf(parts.pole(i))) >= 0.3, `next=${fmt(luminance(nextColour))} other=${fmt(luminance(colorOf(parts.pole(i))))}`)
     }
     c.ok("the brightest visible pole is cone 1's", parts.brightestPole() === 0, `brightest=${parts.brightestPole()}`)
-    c.ok("every pole is opaque and not dark", [0, 1, 2, 3, 4, 5].every((i) => colorOf(parts.visiblePole(i)).w >= 0.99 && luminance(colorOf(parts.visiblePole(i))) > 0.3), "")
+    c.ok("every pole is opaque and not dark", Array.from({length: CONE_COUNT}, (_, k) => k).every((i) => colorOf(parts.visiblePole(i)).w >= 0.99 && luminance(colorOf(parts.visiblePole(i))) > 0.3), "")
     c.ok("cone 1 has a glow halo, and only cone 1", JSON.stringify(parts.litHalos()) === "[0]", `halos=[${parts.litHalos()}]`)
 
     // Start pad: from the vertices, in the drill's own axes.
@@ -127,7 +128,7 @@ export class SlalomC2LayoutScenario extends Scenario {
         c.near(`path at cone ${i + 1} swings 50 cm to the ${side < 0 ? "left" : "right"}`, nearest.t, side * 50, 5)
       }
     }
-    c.ok("correct sides alternate, starting left", JSON.stringify(state.coneSides) === "[-1,1,-1,1,-1,1]", JSON.stringify(state.coneSides))
+    c.ok("correct sides alternate, starting left", JSON.stringify(state.coneSides) === JSON.stringify(Array.from({length: CONE_COUNT}, (_, k) => (k % 2 === 0 ? -1 : 1))), JSON.stringify(state.coneSides))
 
     // Finish band: wide, bright and about 1 m past cone 6, brighter than the path.
     const band = parts.part("FinishBand")

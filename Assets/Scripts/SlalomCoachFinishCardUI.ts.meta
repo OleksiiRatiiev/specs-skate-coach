@@ -28,10 +28,7 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
-    buttonHeightCm: false
-    buttonWidthCm: false
-    scoreCaption: false
-    viewingDistanceCm: false
+    {}
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -41,19 +38,11 @@
   Attachments:
     []
   DefaultScriptInputs:
-    - scoreCaption: cones cleared
-      viewingDistanceCm: !<float> 70.000000
-      buttonWidthCm: 10.500000
-      buttonHeightCm: !<float> 6.000000
+    -
+      {}
   ScriptTypes:
     -
       {}
   InputLines:
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">SlalomCoachFinishCardUI - end of run result</span>"}'
     - '// @ui {"widget":"separator"}'
-    - '// @ui {"widget":"group_start", "label":"Settings"}'
-    - '// @input string scoreCaption = "cones cleared" {"hint":"Caption under the score"}'
-    - '// @input float viewingDistanceCm = 70 {"hint":"Viewing distance the text is scaled for, in cm", "widget":"slider", "min":40, "max":110, "step":5}'
-    - '// @input float buttonWidthCm = 10.5 {"hint":"Width of each button in cm", "widget":"slider", "min":6, "max":16, "step":0.5}'
-    - '// @input float buttonHeightCm = 6 {"hint":"Height of each button in cm", "widget":"slider", "min":3, "max":10, "step":0.5}'
-    - '// @ui {"widget":"group_end"}'

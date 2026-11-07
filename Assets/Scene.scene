@@ -6,7 +6,7 @@
     - !<own> f5d74682-203a-4970-81ea-9fa7b88c96bb
     - !<own> 63114d53-376e-40c4-a643-7acc2ec3c38d
     - !<own> 38b1797b-f8ac-4156-8315-ec83b46833e6
-    - !<own> 498c80bb-105a-4ff9-a219-b720c8edd3ed
+    - !<own> d664d940-511a-4880-91e2-89af34ac4e9f
   layers: !<Layers/267ee9a7-aff2-4f9d-9a49-f71214747d03>
     userLayers:
       - id: 1
@@ -900,18 +900,12 @@
   Enabled: true
   ScriptAsset: !<reference> 32c977ec-aa0f-44ac-ae0a-4a4149229eef
   ScriptInputsDefault:
-    scoreCaption: true
-    viewingDistanceCm: true
-    buttonWidthCm: true
-    buttonHeightCm: true
+    {}
   ScriptTypesDefault:
     {}
   ScriptInputs:
     "":
-      scoreCaption: cones cleared
-      viewingDistanceCm: !<float> 70.000000
-      buttonWidthCm: 10.500000
-      buttonHeightCm: !<float> 6.000000
+      {}
   ScriptTypes:
     "":
       {}
@@ -991,22 +985,6 @@
     - !<own> 54130007-65c1-48d3-b9df-0866d8112e01
   Components:
     []
-- !<ScriptComponent/3b99caf2-d311-46eb-8518-6ba8921e2620>
-  PrefabRemaps:
-    []
-  Name: MessagingBridge
-  Enabled: true
-  ScriptAsset: !<reference> 9aa407db-2872-4afc-a162-cf7faf2a0f29
-  ScriptInputsDefault:
-    {}
-  ScriptTypesDefault:
-    {}
-  ScriptInputs:
-    "":
-      {}
-  ScriptTypes:
-    "":
-      {}
 - !<SceneObject/3de2c7ea-1525-465a-9056-68565a4014a7>
   PrefabRemaps:
     []
@@ -1115,6 +1093,22 @@
     - !<own> 8fe2a532-9bf3-4cde-b598-04ce5470718d
   Components:
     []
+- !<ScriptComponent/47265ee4-3ceb-46d8-8b59-84c5e4eec8d9>
+  PrefabRemaps:
+    []
+  Name: MessagingBridge
+  Enabled: true
+  ScriptAsset: !<reference> 9aa407db-2872-4afc-a162-cf7faf2a0f29
+  ScriptInputsDefault:
+    {}
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      {}
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/49130fc0-2022-449d-b305-4d0d8b980d12>
   PrefabRemaps:
     []
@@ -1130,21 +1124,6 @@
     []
   Components:
     - !<own> 3607930f-25ef-481f-a7fe-512ae480a225
-- !<SceneObject/498c80bb-105a-4ff9-a219-b720c8edd3ed>
-  PrefabRemaps:
-    []
-  Name: LEAF Plugin Bridge
-  Enabled: true
-  Layers: 1
-  LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
-    HasSegmentScaleCompensation: false
-  Children:
-    []
-  Components:
-    - !<own> 3b99caf2-d311-46eb-8518-6ba8921e2620
 - !<SceneObject/4c195c04-c397-454e-bd08-3485f37d84fe>
   PrefabRemaps:
     []
@@ -1857,19 +1836,16 @@
   ScriptAsset: !<reference> 214f22a5-326f-4f8b-8c39-d0fd2c942b0d
   ScriptInputsDefault:
     letterHeightCm: true
-    holdSec: true
     fadeInSec: true
     fadeOutSec: true
-    cueColor: true
   ScriptTypesDefault:
     {}
   ScriptInputs:
     "":
       letterHeightCm: !<float> 9.000000
-      holdSec: !<float> 2.000000
+      holdSec: !<float> 3.000000
       fadeInSec: 0.120000
       fadeOutSec: 0.350000
-      cueColor: !<Vec3> {x: 1.000000, y: 1.000000, z: 0.920000}
   ScriptTypes:
     "":
       {}
@@ -2458,37 +2434,12 @@
   Enabled: true
   ScriptAsset: !<reference> fc7a56b1-7a9a-48e4-81e3-38c7017c328f
   ScriptInputsDefault:
-    titleText: true
-    hintText: true
-    valuePrefix: true
-    placeLabel: true
-    grabMarginCm: true
-    sliderToButtonGapCm: true
-    viewingDistanceCm: true
-    distanceCm: true
-    dropCm: true
-    leftCm: true
-    deadZoneDeg: true
-    backingColor: true
-    grabBarColor: true
+    {}
   ScriptTypesDefault:
     {}
   ScriptInputs:
     "":
-      titleText: Slalom Coach AR
-      hintText: "Set spacing, then place the drill"
-      valuePrefix: "Cone spacing: "
-      placeLabel: Place drill
-      panelWidthCm: !<float> 21.000000
-      grabMarginCm: !<float> 2.000000
-      sliderToButtonGapCm: !<float> 4.000000
-      viewingDistanceCm: !<float> 55.000000
-      distanceCm: !<float> 60.000000
-      dropCm: !<float> 25.000000
-      leftCm: !<float> 6.000000
-      deadZoneDeg: !<float> 30.000000
-      backingColor: !<Vec4> {x: 0.620000, y: 0.800000, z: 0.900000, w: 0.620000}
-      grabBarColor: !<Vec4> {x: 0.120000, y: 0.600000, z: 0.720000, w: 1.000000}
+      {}
   ScriptTypes:
     "":
       {}
@@ -2700,6 +2651,21 @@
     - !<own> bbcbfc17-8d65-4333-bce1-6f7239f690b8
   Components:
     []
+- !<SceneObject/d664d940-511a-4880-91e2-89af34ac4e9f>
+  PrefabRemaps:
+    []
+  Name: LEAF Plugin Bridge
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 47265ee4-3ceb-46d8-8b59-84c5e4eec8d9
 - !<SceneObject/d9071294-12e8-425f-98f1-bf308a02639e>
   PrefabRemaps:
     []

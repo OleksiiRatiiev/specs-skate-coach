@@ -92,7 +92,7 @@ export class Checks {
 }
 
 const DRAG_TIMEOUT_MS = 60000
-const TRACE_NAMES = ["SpacingSliderCell", "PlaceDrillButton", "AgainButton", "MoveDrillButton"]
+const TRACE_NAMES = ["ConesMinusButton", "ConesPlusButton", "SpacingMinusButton", "SpacingPlusButton", "PlaceDrillButton", "AgainButton", "MoveDrillButton"]
 
 export interface TraceEvent {
   t: number
@@ -410,10 +410,15 @@ export class DrillParts {
     return this.poleNext(index).enabled ? this.poleNext(index) : this.pole(index)
   }
 
+  /** Number of cones on this drill, from the Lens's own state. */
+  count(): number {
+    return snap().coneCount
+  }
+
   /** Cones whose thick PoleNext is showing. */
   nextPoles(): number[] {
     const shown: number[] = []
-    for (let i = 0; i < CONE_COUNT; i++) {
+    for (let i = 0; i < this.count(); i++) {
       if (this.poleNext(i).enabled) {
         shown.push(i)
       }
@@ -423,7 +428,7 @@ export class DrillParts {
 
   litHalos(): number[] {
     const lit: number[] = []
-    for (let i = 0; i < CONE_COUNT; i++) {
+    for (let i = 0; i < this.count(); i++) {
       if (this.part(`PoleHalo_${i + 1}`).enabled) {
         lit.push(i)
       }
@@ -435,7 +440,7 @@ export class DrillParts {
   brightestPole(): number {
     let best = -1
     let bestLuminance = -1
-    for (let i = 0; i < CONE_COUNT; i++) {
+    for (let i = 0; i < this.count(); i++) {
       const value = luminance(colorOf(this.visiblePole(i)))
       if (value > bestLuminance + 0.001) {
         bestLuminance = value
@@ -447,7 +452,7 @@ export class DrillParts {
 
   amberCones(): number[] {
     const amber: number[] = []
-    for (let i = 0; i < CONE_COUNT; i++) {
+    for (let i = 0; i < this.count(); i++) {
       if (isAmber(colorOf(this.cone(i)))) {
         amber.push(i)
       }
@@ -471,6 +476,7 @@ export class SkaterRig {
   readonly camera: Camera
 
   private pitchRotation: quat
+  private levelPitch: quat
   readonly basePitchDeg: number
 
   constructor(host: BaseScriptComponent, config?: ScenarioConfig) {
@@ -485,6 +491,7 @@ export class SkaterRig {
     // The camera's own tilt is kept, so the frustum is the real preview camera's. Only the heading is the rig's.
     const extraDown = parseFloat((config && config.get("lookDownDeg")) || "0")
     const levelPitch = quat.angleAxis(-this.yaw, vec3.up()).multiply(worldRotation)
+    this.levelPitch = levelPitch
     this.pitchRotation = levelPitch.multiply(quat.angleAxis((-extraDown * Math.PI) / 180, vec3.right()))
     this.rig = global.scene.createSceneObject("LeafTestRig")
     this.rigTransform = this.rig.getTransform()
@@ -508,7 +515,8 @@ export class SkaterRig {
 
   /** Tilts the view to an absolute downward angle in degrees (0 is level), keeping the heading. */
   setPitchDownDeg(degrees: number): void {
-    this.pitchRotation = quat.angleAxis((-degrees * Math.PI) / 180, vec3.right())
+    // Keep the camera's own base orientation and add only the difference from its starting tilt.
+    this.pitchRotation = this.levelPitch.multiply(quat.angleAxis((-(degrees + this.basePitchDeg) * Math.PI) / 180, vec3.right()))
   }
 
   /** The camera's real downward tilt in degrees, positive looking down. */
@@ -605,7 +613,7 @@ export function measuredConeStations(state: SlalomCoachSnapshot, parts: DrillPar
   const pad = v3(state.padCentre)
   const forward = v3(state.drillForward)
   const stations: number[] = []
-  for (let i = 0; i < CONE_COUNT; i++) {
+  for (let i = 0; i < state.coneCount; i++) {
     stations.push(parts.cone(i).getTransform().getWorldPosition().sub(pad).dot(forward))
   }
   return stations
@@ -727,36 +735,50 @@ export function isOnStep(m: number): boolean {
   return m >= SPACING_MIN_M - 1e-6 && m <= SPACING_MAX_M + 1e-6 && Math.abs(m * 10 - Math.round(m * 10)) < 1e-6
 }
 
-/** One real drag of the slider's knob area by a change in spacing (metres), with optional overshoot in cm. */
-export async function dragSliderBy(pincher: Pincher, probe: SliderProbe, deltaM: number, overshootCm: number = 0, onFrame?: (state: SlalomCoachSnapshot) => void): Promise<void> {
-  const centimetres = (deltaM / (SPACING_MAX_M - SPACING_MIN_M)) * probe.trackLengthCm() + Math.sign(deltaM) * overshootCm
-  await pincher.drag("SpacingSliderCell", probe.rightAxis().uniformScale(centimetres), undefined, onFrame)
+/** The slider is gone (the setup strip uses steppers). Kept only so older scenarios still compile. */
+export async function dragSliderBy(_pincher: Pincher, _probe: SliderProbe, _deltaM: number, _overshootCm: number = 0, _onFrame?: (state: SlalomCoachSnapshot) => void): Promise<void> {
+  throw new Error("The setup slider was replaced by - and + steppers")
 }
 
-/** Drags the slider until it reads targetM. Ends are reached by over-dragging, which the slider clamps. */
+/** Steps one of the two setup rows with real pinches on its - or + button. */
+export async function stepRow(pincher: Pincher, row: "Cones" | "Spacing", direction: -1 | 1): Promise<void> {
+  await pincher.pinch(`${row}${direction < 0 ? "Minus" : "Plus"}Button`)
+  await frames(2)
+}
+
+/** Sets the spacing with real pinches on the spacing - and + buttons, one 0.1 m step at a time. */
 export async function setSpacingByDrag(pincher: Pincher, targetM: number, onFrame?: (state: SlalomCoachSnapshot) => void): Promise<number> {
-  const probe = new SliderProbe()
-  let attempts = 0
-  while (Math.abs(snap().sliderValueM - targetM) > 0.001 && attempts < 6) {
-    attempts++
-    const atEnd = targetM <= SPACING_MIN_M + 0.001 || targetM >= SPACING_MAX_M - 0.001
-    const delta = targetM - snap().sliderValueM
-    // The IK wrist settles a little short of a small target, and the segmented slider rounds to the nearest
-    // step, so a small correction is asked for slightly more than it needs.
-    const steps = Math.round(Math.abs(delta) * 10)
-    const gain = steps === 1 ? 1.35 : steps === 2 ? 1.2 : steps === 3 ? 1.12 : 1.0
-    await dragSliderBy(pincher, probe, delta * gain, atEnd ? 8 : 0, onFrame)
-    await frames(3)
+  let presses = 0
+  while (Math.abs(snap().sliderValueM - targetM) > 0.001 && presses < 12) {
+    presses++
+    await stepRow(pincher, "Spacing", targetM > snap().sliderValueM ? 1 : -1)
+    if (onFrame) {
+      onFrame(snap())
+    }
   }
-  print(`[SLALOM][drag] slider now ${snap().sliderValueM} wanted ${targetM} after ${attempts} drag(s)`)
-  return attempts
+  print(`[SLALOM][steps] spacing now ${snap().sliderValueM} wanted ${targetM} after ${presses} press(es)`)
+  return presses
+}
+
+/** Sets the cone count with real pinches on the cones - and + buttons. */
+export async function setCountBySteps(pincher: Pincher, target: number): Promise<number> {
+  let presses = 0
+  while (snap().coneCount !== target && presses < 12) {
+    presses++
+    await stepRow(pincher, "Cones", target > snap().coneCount ? 1 : -1)
+  }
+  print(`[SLALOM][steps] cones now ${snap().coneCount} wanted ${target} after ${presses} press(es)`)
+  return presses
 }
 
 /** Places the drill with a real Place drill pinch, after a real slider drag when the spacing is not the default 1.0 m. */
-export async function placeWithPinches(pincher: Pincher, config?: ScenarioConfig, spacingM: number = 1.0): Promise<PlacedDrill> {
+export async function placeWithPinches(pincher: Pincher, config?: ScenarioConfig, spacingM: number = 1.0, coneCount: number = 6): Promise<PlacedDrill> {
   const settleMs = parseFloat((config && config.get("settleMs")) || "2000")
   if (Math.abs(spacingM - 1.0) > 0.001) {
     await setSpacingByDrag(pincher, spacingM)
+  }
+  if (coneCount !== 6) {
+    await setCountBySteps(pincher, coneCount)
   }
   await sleep(settleMs)
   await pincher.pinch("PlaceDrillButton")
@@ -770,7 +792,7 @@ export async function placeWithPinches(pincher: Pincher, config?: ScenarioConfig
   }
   const parts = new DrillParts("Drill")
   const stations = measuredConeStations(state, parts)
-  const finish = stations[CONE_COUNT - 1] + 100
+  const finish = stations[stations.length - 1] + 100
   return {state, parts, stations, sides: state.coneSides, finish, weave: weaveProfile(stations, state.coneSides, finish)}
 }
 

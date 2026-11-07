@@ -6,6 +6,10 @@
  * The cue is world-anchored: it stays where it was placed, and never follows the head.
  */
 
+import {CYAN} from "./SlalomCoachNeon"
+
+const cueFont = requireAsset("../Fonts/ChakraPetch-Bold.ttf") as Font
+
 @component
 export class SlalomCoachCueUI extends BaseScriptComponent {
   @ui.label('<span style="color: #60A5FA;">SlalomCoachCueUI - one short cue at a time</span>')
@@ -19,7 +23,7 @@ export class SlalomCoachCueUI extends BaseScriptComponent {
   @input
   @hint("How long the cue stays fully visible, in seconds")
   @widget(new SliderWidget(0.5, 5, 0.1))
-  holdSec: number = 2
+  holdSec: number = 3
 
   @input
   @hint("Length of the quick fade in and replace, in seconds")
@@ -31,10 +35,6 @@ export class SlalomCoachCueUI extends BaseScriptComponent {
   @widget(new SliderWidget(0.05, 1.5, 0.05))
   fadeOutSec: number = 0.35
 
-  @input("vec3", "{1,1,0.92}")
-  @hint("Cue colour. Keep it light and high contrast, with no panel behind it")
-  @widget(new ColorWidget())
-  cueColor: vec3
   @ui.group_end
 
   private textObject: SceneObject
@@ -57,6 +57,7 @@ export class SlalomCoachCueUI extends BaseScriptComponent {
 
     this.text = this.textObject.createComponent("Component.Text") as Text
     this.text.size = size
+    this.text.font = cueFont
     this.text.depthTest = true
     this.text.horizontalAlignment = HorizontalAlignment.Center
     this.text.verticalAlignment = VerticalAlignment.Center
@@ -161,6 +162,6 @@ export class SlalomCoachCueUI extends BaseScriptComponent {
 
   private setAlpha(alpha: number): void {
     this.alpha = alpha
-    this.text.textFill.color = new vec4(this.cueColor.x, this.cueColor.y, this.cueColor.z, alpha)
+    this.text.textFill.color = new vec4(CYAN.x, CYAN.y, CYAN.z, alpha)
   }
 }

@@ -157,3 +157,154 @@ export function buildArrowMesh(width: number, height: number): RenderMesh {
   m.tri(stemTopLeft, stemBottomRight, stemTopRight)
   return m.build()
 }
+
+// ---------------------------------------------------------------------------------------------
+// 2D UI shapes in the local XY plane, facing +Z. Used by the neon HUD (setup strip, finish card).
+// ---------------------------------------------------------------------------------------------
+
+function octagon(w: number, h: number, c: number): number[][] {
+  const hw = w / 2
+  const hh = h / 2
+  return [
+    [-hw + c, hh], [hw - c, hh], [hw, hh - c], [hw, -hh + c],
+    [hw - c, -hh], [-hw + c, -hh], [-hw, -hh + c], [-hw, hh - c],
+  ]
+}
+
+function addPolyFan(m: MeshAccumulator, points: number[][], z: number): void {
+  const centre = m.vertex(0, 0, z, 0, 0, 1, 0.5, 0.5)
+  const ids = points.map((p) => m.vertex(p[0], p[1], z, 0, 0, 1, 0, 0))
+  for (let i = 0; i < ids.length; i++) {
+    m.tri(centre, ids[(i + 1) % ids.length], ids[i])
+  }
+}
+
+/** Filled rectangle with chamfered corners. */
+export function buildChamferFillMesh(w: number, h: number, chamfer: number): RenderMesh {
+  const m = new MeshAccumulator()
+  addPolyFan(m, octagon(w, h, chamfer), 0)
+  return m.build()
+}
+
+/** Thin chamfered outline ring, thickness measured inward from the outer edge. */
+export function buildChamferFrameMesh(w: number, h: number, chamfer: number, thickness: number): RenderMesh {
+  const m = new MeshAccumulator()
+  const outer = octagon(w, h, chamfer)
+  const inner = octagon(w - 2 * thickness, h - 2 * thickness, Math.max(0.01, chamfer - 0.586 * thickness))
+  const o = outer.map((p) => m.vertex(p[0], p[1], 0, 0, 0, 1))
+  const i = inner.map((p) => m.vertex(p[0], p[1], 0, 0, 0, 1))
+  for (let k = 0; k < 8; k++) {
+    const n = (k + 1) % 8
+    m.tri(o[k], o[n], i[n])
+    m.tri(o[k], i[n], i[k])
+  }
+  return m.build()
+}
+
+function addStrip(m: MeshAccumulator, ax: number, ay: number, bx: number, by: number, nx: number, ny: number, th: number): void {
+  const a = m.vertex(ax, ay, 0, 0, 0, 1)
+  const b = m.vertex(bx, by, 0, 0, 0, 1)
+  const c = m.vertex(bx + nx * th, by + ny * th, 0, 0, 0, 1)
+  const d = m.vertex(ax + nx * th, ay + ny * th, 0, 0, 0, 1)
+  m.tri(a, b, c)
+  m.tri(a, c, d)
+  m.tri(a, c, b)
+  m.tri(a, d, c)
+}
+
+/** HUD corner brackets that follow the chamfer, thicker than the frame. */
+export function buildCornerBracketsMesh(w: number, h: number, chamfer: number, len: number, thickness: number): RenderMesh {
+  const m = new MeshAccumulator()
+  const hw = w / 2
+  const hh = h / 2
+  const r = Math.SQRT1_2
+  // Each corner as [sx, sy]: the sign of the corner.
+  for (const [sx, sy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+    // Along the horizontal edge, towards the inside.
+    addStrip(m, sx * (hw - chamfer), sy * hh, sx * (hw - len), sy * hh, 0, -sy, thickness)
+    // Along the vertical edge.
+    addStrip(m, sx * hw, sy * (hh - chamfer), sx * hw, sy * (hh - len), -sx, 0, thickness)
+    // The chamfer itself.
+    addStrip(m, sx * (hw - chamfer), sy * hh, sx * hw, sy * (hh - chamfer), -sx * r, -sy * r, thickness)
+  }
+  return m.build()
+}
+
+/** Plain rectangle in the XY plane, centred on the origin. */
+export function buildQuadXYMesh(w: number, h: number): RenderMesh {
+  const m = new MeshAccumulator()
+  addPolyFan(m, [[-w / 2, h / 2], [w / 2, h / 2], [w / 2, -h / 2], [-w / 2, -h / 2]], 0)
+  return m.build()
+}
+
+/** Little cone silhouette for the finish card: a tapered body on a flat base. */
+export function buildConeIconMesh(w: number, h: number): RenderMesh {
+  const m = new MeshAccumulator()
+  const baseH = h * 0.18
+  const y0 = -h / 2
+  const bodyTopW = w * 0.2
+  const bodyBottomW = w * 0.7
+  const a = m.vertex(-bodyBottomW / 2, y0 + baseH, 0, 0, 0, 1)
+  const b = m.vertex(bodyBottomW / 2, y0 + baseH, 0, 0, 0, 1)
+  const c = m.vertex(bodyTopW / 2, h / 2, 0, 0, 0, 1)
+  const d = m.vertex(-bodyTopW / 2, h / 2, 0, 0, 0, 1)
+  m.tri(a, b, c)
+  m.tri(a, c, d)
+  const e = m.vertex(-w / 2, y0, 0, 0, 0, 1)
+  const f = m.vertex(w / 2, y0, 0, 0, 0, 1)
+  const g = m.vertex(w / 2, y0 + baseH, 0, 0, 0, 1)
+  const i = m.vertex(-w / 2, y0 + baseH, 0, 0, 0, 1)
+  m.tri(e, f, g)
+  m.tri(e, g, i)
+  return m.build()
+}
+
+/** Circular restart arrow: an open ring with an arrow head at its end. */
+export function buildRestartIconMesh(radius: number, thickness: number): RenderMesh {
+  const m = new MeshAccumulator()
+  const start = Math.PI * 0.15
+  const end = Math.PI * 1.75
+  const steps = 24
+  const outer = radius
+  const inner = radius - thickness
+  let prevO = -1
+  let prevI = -1
+  for (let s = 0; s <= steps; s++) {
+    const angle = start + ((end - start) * s) / steps
+    const cx = Math.cos(angle)
+    const cy = Math.sin(angle)
+    const o = m.vertex(cx * outer, cy * outer, 0, 0, 0, 1)
+    const i = m.vertex(cx * inner, cy * inner, 0, 0, 0, 1)
+    if (s > 0) {
+      m.tri(prevO, o, i)
+      m.tri(prevO, i, prevI)
+    }
+    prevO = o
+    prevI = i
+  }
+  // Arrow head at the start of the ring, pointing along the travel direction (clockwise end).
+  const tx = Math.cos(start)
+  const ty = Math.sin(start)
+  const mid = radius - thickness / 2
+  const tangentX = ty
+  const tangentY = -tx
+  const head = thickness * 1.5
+  const base = m.vertex(tx * (mid + head), ty * (mid + head), 0, 0, 0, 1)
+  const base2 = m.vertex(tx * (mid - head), ty * (mid - head), 0, 0, 0, 1)
+  const tip = m.vertex(tx * mid + tangentX * head * 1.4, ty * mid + tangentY * head * 1.4, 0, 0, 0, 1)
+  m.tri(base, base2, tip)
+  m.tri(base, tip, base2)
+  return m.build()
+}
+
+/** Long diamond shard, used by the celebration burst. Lies in the XY plane, centred on the origin. */
+export function buildShardMesh(length: number, width: number): RenderMesh {
+  const m = new MeshAccumulator()
+  const t = m.vertex(0, length / 2, 0, 0, 0, 1)
+  const l = m.vertex(-width / 2, 0, 0, 0, 0, 1)
+  const b = m.vertex(0, -length / 2, 0, 0, 0, 1)
+  const r = m.vertex(width / 2, 0, 0, 0, 0, 1)
+  m.tri(t, l, b)
+  m.tri(t, b, r)
+  return m.build()
+}

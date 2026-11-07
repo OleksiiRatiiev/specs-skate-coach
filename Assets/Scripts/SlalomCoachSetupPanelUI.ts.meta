@@ -28,20 +28,7 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
-    backingColor: false
-    deadZoneDeg: false
-    distanceCm: false
-    dropCm: false
-    grabBarColor: false
-    grabMarginCm: false
-    hintText: false
-    leftCm: false
-    panelWidthCm: false
-    placeLabel: false
-    sliderToButtonGapCm: false
-    titleText: false
-    valuePrefix: false
-    viewingDistanceCm: false
+    {}
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -51,45 +38,11 @@
   Attachments:
     []
   DefaultScriptInputs:
-    - titleText: Slalom Coach AR
-      hintText: "Set spacing, then place the drill"
-      valuePrefix: "Cone spacing: "
-      placeLabel: Place drill
-      panelWidthCm: !<float> 24.000000
-      grabMarginCm: !<float> 2.000000
-      sliderToButtonGapCm: !<float> 4.000000
-      viewingDistanceCm: !<float> 55.000000
-      distanceCm: !<float> 60.000000
-      dropCm: !<float> 25.000000
-      leftCm: !<float> 6.000000
-      deadZoneDeg: !<float> 30.000000
-      backingColor: !<Vec4> {x: 0.620000, y: 0.800000, z: 0.900000, w: 0.620000}
-      grabBarColor: !<Vec4> {x: 0.120000, y: 0.600000, z: 0.720000, w: 1.000000}
+    -
+      {}
   ScriptTypes:
     -
       {}
   InputLines:
-    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">SlalomCoachSetupPanelUI - spacing slider and Place drill</span>"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">SlalomCoachSetupPanelUI - cone count, spacing, Place drill</span>"}'
     - '// @ui {"widget":"separator"}'
-    - '// @ui {"widget":"group_start", "label":"Text"}'
-    - '// @input string titleText = "Slalom Coach AR" {"hint":"Title at the top of the panel"}'
-    - '// @input string hintText = "Set spacing, then place the drill" {"hint":"One-line hint under the title"}'
-    - '// @input string valuePrefix = "Cone spacing: " {"hint":"Label in front of the spacing value"}'
-    - '// @input string placeLabel = "Place drill" {"hint":"Text on the big button"}'
-    - '// @ui {"widget":"group_end"}'
-    - '// @ui {"widget":"group_start", "label":"Layout"}'
-    - '// @input float panelWidthCm = 30 {"hint":"Overall panel width in cm, including the grab margin", "widget":"slider", "min":24, "max":40, "step":1}'
-    - '// @input float grabMarginCm = 2 {"hint":"Width of the grab margin around the panel, in cm", "widget":"slider", "min":1, "max":4, "step":0.5}'
-    - '// @input float sliderToButtonGapCm = 4 {"hint":"Clear space between the slider and the Place drill button, in cm. Never below 3", "widget":"slider", "min":3, "max":8, "step":0.5}'
-    - '// @input float viewingDistanceCm = 60 {"hint":"Viewing distance the text is scaled for, in cm", "widget":"slider", "min":40, "max":110, "step":5}'
-    - '// @ui {"widget":"group_end"}'
-    - '// @ui {"widget":"group_start", "label":"Follow"}'
-    - '// @input float distanceCm = 60 {"hint":"Distance from the eyes to the panel, in cm", "widget":"slider", "min":40, "max":110, "step":5}'
-    - '// @input float dropCm = 25 {"hint":"How far below eye level the panel floats, in cm", "widget":"slider", "min":0, "max":40, "step":1}'
-    - '// @input float leftCm = 6 {"hint":"How far to the left of the view centre the panel floats, in cm", "widget":"slider", "min":0, "max":20, "step":1}'
-    - '// @input float deadZoneDeg = 30 {"hint":"Turn the view by more than this many degrees and the panel follows", "widget":"slider", "min":10, "max":60, "step":1}'
-    - '// @ui {"widget":"group_end"}'
-    - '// @ui {"widget":"group_start", "label":"Colours"}'
-    - '// @input vec4 backingColor = "{0.62,0.80,0.90,0.62}" {"hint":"Light, semi-opaque panel background. Keep it light: dark colours turn transparent on the display", "widget":"color"}'
-    - '// @input vec4 grabBarColor = "{0.12,0.60,0.72,1}" {"hint":"Colour of the grab bar under the panel", "widget":"color"}'
-    - '// @ui {"widget":"group_end"}'

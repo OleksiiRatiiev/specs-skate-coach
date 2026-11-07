@@ -143,12 +143,36 @@ export class SlalomC5FinishScenario extends Scenario {
     c.ok(`${when}: score state is ${score}`, state.finishScoreText === score, `score='${state.finishScoreText}' cleared=${state.clearedCount}`)
     const clean = state.clearedCount === state.coneCount
     const headline = findRequired("Headline").getComponent("Component.Text") as Text
-    c.ok(`${when}: headline reads ${clean ? "CLEAN RUN" : "NICE RUN"}`, !!headline && headline.text === (clean ? "CLEAN RUN" : "NICE RUN"), `text='${headline ? headline.text : ""}'`)
+    const expectedHeadline = clean ? "CLEAN RUN" : state.clearedCount / state.coneCount >= 0.7 ? "NICE RUN" : "KEEP PRACTICING"
+    c.ok(`${when}: headline reads ${expectedHeadline}`, !!headline && headline.text === expectedHeadline, `text='${headline ? headline.text : ""}'`)
+    // Size: the card is 28 x 18 cm and every text sits inside it.
+    const plateFrame = findRequired("Frame", findRequired("CardPlate")).getComponent("Component.RenderMeshVisual") as RenderMeshVisual
+    const plateBox = plateFrame.mesh.aabbMax.sub(plateFrame.mesh.aabbMin)
+    c.near(`${when}: card is 28 cm wide`, plateBox.x, 28, 0.5)
+    c.near(`${when}: card is 18 cm tall`, plateBox.y, 18, 0.5)
+    for (const name of ["Headline", "DetailLine", "RunCompleteLabel"]) {
+      const text = findRequired(name).getComponent("Component.Text") as Text
+      const scale = text.getSceneObject().getTransform().getWorldScale().x / findRequired("FinishCard").getTransform().getWorldScale().x
+      const width = text.getBoundingBox().getSize().x * scale
+      c.ok(`${when}: ${name} fits inside the card`, width <= 25, `width=${fmt(width)} cm`)
+    }
+    const detailObject = findRequired("DetailLine")
+    const detailText = detailObject.getComponent("Component.Text") as Text
+    const detailBox = detailText.getBoundingBox().getSize()
+    const detailScale = detailObject.getTransform().getLocalScale().x
+    c.ok(`${when}: subline keeps its 1.3 cm size`, Math.abs(detailScale * 1.5946 - 1.3) < 0.05, `cap=${fmt(detailScale * 1.5946)} cm`)
+    c.ok(`${when}: subline stays inside the card (wraps, no overflow)`, detailBox.x * detailScale <= 25, `w=${fmt(detailBox.x * detailScale)}`)
+    const headlineScale = headline.getSceneObject().getTransform().getLocalScale().x
+    c.ok(`${when}: headline capitals are at most 3.5 cm`, headlineScale * 1.5946 <= 3.55, `cap=${fmt(headlineScale * 1.5946)} cm`)
     const small = allTexts().filter((text) => text.getSceneObject().isEnabledInHierarchy && text.text === "RUN COMPLETE")
     c.ok(`${when}: small RUN COMPLETE label shows`, small.length === 1, `count=${small.length}`)
     const missedList: number[] = []
     state.coneStates.forEach((s, i) => s !== "cleared" && missedList.push(i + 1))
-    const expectedDetail = clean ? `${score} cones · eyes up all the way` : `${score} cones · cone ${missedList[0]} is marked on the drill`
+    const expectedDetail = clean
+      ? `${score} cones · eyes up all the way`
+      : missedList.length === 1
+        ? `${score} cones · cone ${missedList[0]} is marked on the drill`
+        : `${score} cones · misses glow amber on the drill`
     const detail = findRequired("DetailLine").getComponent("Component.Text") as Text
     c.ok(`${when}: real-numbers line is '${expectedDetail}'`, detail.text === expectedDetail && state.finishDetail === expectedDetail, `text='${detail.text}'`)
     // One icon per cone, in order: cyan when cleared, amber when missed.
@@ -193,12 +217,18 @@ export class SlalomC5FinishScenario extends Scenario {
 
     const card = findRequired("FinishCard").getTransform().getWorldPosition()
     const eye = rig.actualEye()
-    c.between(`${when}: card about 70 cm away`, card.distance(eye), 60, 80)
-    c.between(`${when}: card slightly below eye level`, eye.y - card.y, 1, 25)
+    c.between(`${when}: card about 80 cm away`, card.distance(eye), 70, 90)
+    c.between(`${when}: card about 15 cm below eye level`, eye.y - card.y, 10, 20)
     const view = rig.viewOf(card)
     const cameraForward = findRequired("Camera Object").getTransform().getWorldRotation().multiplyVec3(new vec3(0, 0, -1))
     const toCard = card.sub(eye)
     c.info(`${when}: card geometry`, `eye=${fmtV(eye)} card=${fmtV(card)} cameraForward=${fmtV(cameraForward)} toCardDotForward=${fmt(toCard.normalize().dot(cameraForward))} rigYawDeg=${fmt((rig.yaw * 180) / Math.PI)} behind=${view.behind} screen=(${fmt(view.x)},${fmt(view.y)})`)
+    // Cone icon row stays inside the card at any cone count.
+    for (let i = 0; i < state.coneCount; i++) {
+      const icon = findRequired(`ConeIcon_${i + 1}`).getTransform()
+      const x = Math.abs(icon.getLocalPosition().x) + 0.5 * 1.63 * icon.getLocalScale().x
+      c.ok(`${when}: cone icon ${i + 1} fits in the card`, x <= 12.5, `edge=${fmt(x)}`)
+    }
     c.ok(`${when}: card inside the view`, view.inView, `screen=(${fmt(view.x)},${fmt(view.y)})`)
   }
 

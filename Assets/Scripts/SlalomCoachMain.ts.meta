@@ -154,8 +154,8 @@
     - '// @ui {"widget":"group_start", "label":"Surface placement"}'
     - '// @input float eyeHeightCm = 160 {"hint":"Estimated eye height, used to find the floor. The Lens does not sense the real ground", "widget":"slider", "min":120, "max":200, "step":1}'
     - "// @input float ghostAheadCm = 200 {\"hint\":\"Distance from the skater to the ghost's start pad, in cm\", \"widget\":\"slider\", \"min\":100, \"max\":400, \"step\":10}"
-    - '// @input float finishCardDistanceCm = 70 {"hint":"Finish card distance, in cm", "widget":"slider", "min":40, "max":110, "step":5}'
-    - '// @input float finishCardDropCm = 10 {"hint":"How far below eye level the finish card floats, in cm", "widget":"slider", "min":0, "max":40, "step":1}'
+    - '// @input float finishCardDistanceCm = 80 {"hint":"Finish card distance, in cm", "widget":"slider", "min":40, "max":110, "step":5}'
+    - '// @input float finishCardDropCm = 15 {"hint":"How far below eye level the finish card floats, in cm", "widget":"slider", "min":0, "max":40, "step":1}'
     - '// @input float stanceCardAheadCm = 100 {"hint":"Stance card distance from the pad centre along the drill, in cm", "widget":"slider", "min":50, "max":200, "step":5}'
     - '// @input float stanceCardHeightCm = 147 {"hint":"Stance card centre height above the floor, in cm", "widget":"slider", "min":80, "max":180, "step":5}'
     - '// @ui {"widget":"group_end"}'

@@ -182,6 +182,7 @@ export class NeonButton {
   private style: ButtonStyle
   private state: StateName = StateName.default
   private pulse = 0
+  private iconWidth = 0
   private _onPress = new Event<void>()
 
   get onPress(): PublicApi<void> {
@@ -195,7 +196,7 @@ export class NeonButton {
     w: number,
     h: number,
     position: vec3,
-    options: {style?: ButtonStyle; icon?: ButtonIcon; weight?: Weight; capCm?: number; spacing?: number}
+    options: {style?: ButtonStyle; icon?: ButtonIcon; weight?: Weight; capCm?: number; spacing?: number; iconRadius?: number}
   ) {
     this.style = options.style ?? "cyan"
     this.object = global.scene.createSceneObject(name)
@@ -225,7 +226,8 @@ export class NeonButton {
         name: "Label",
       })
       if (hasIcon) {
-        this.iconParts.push(addHudMesh(this.object, "RestartIcon", buildRestartIconMesh(1.35, 0.4), this.labelColor(), 0.2, 40))
+        this.iconWidth = (options.iconRadius ?? 1.35) * 2
+        this.iconParts.push(addHudMesh(this.object, "RestartIcon", buildRestartIconMesh(options.iconRadius ?? 1.35, (options.iconRadius ?? 1.35) * 0.3), this.labelColor(), 0.2, 40))
         this.iconParts[0].object.getTransform().setLocalPosition(new vec3(-(this.estimateLabelWidth(labelText, capCm) / 2) + labelX - 1.2, 0, 0.2))
       }
     } else {
@@ -241,6 +243,38 @@ export class NeonButton {
 
   setVisible(visible: boolean): void {
     this.object.enabled = visible
+  }
+
+  /**
+   * Fits the label (and the restart icon, if any) inside the button with padding: shrinks the label when it is
+   * wider than the inner width, then centres icon + gap + label as one group. Returns false while the text is
+   * not measurable yet (call again a frame later).
+   */
+  fitContent(innerWidth: number, gap: number): boolean {
+    if (!this.label) {
+      return true
+    }
+    const box = this.label.getBoundingBox()
+    const labelTransform = this.label.getSceneObject().getTransform()
+    const scale = labelTransform.getLocalScale().x
+    let width = box.getSize().x * scale
+    if (!(width > 0.01)) {
+      return false
+    }
+    const iconWidth = this.iconParts.length > 0 ? this.iconWidth + gap : 0
+    const limit = innerWidth - iconWidth
+    if (width > limit) {
+      const k = limit / width
+      labelTransform.setLocalScale(new vec3(scale * k, scale * k, scale * k))
+      width *= k
+    }
+    const total = iconWidth + width
+    const start = -total / 2
+    labelTransform.setLocalPosition(new vec3(start + iconWidth + width / 2, 0, 0.2))
+    if (this.iconParts.length > 0) {
+      this.iconParts[0].object.getTransform().setLocalPosition(new vec3(start + this.iconWidth / 2, 0, 0.2))
+    }
+    return true
   }
 
   /** Slow glow pulse, level 0..1. */

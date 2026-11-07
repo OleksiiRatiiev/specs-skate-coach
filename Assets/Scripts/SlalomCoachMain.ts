@@ -198,12 +198,12 @@ export class SlalomCoachMain extends BaseScriptComponent {
   @input
   @hint("Finish card distance, in cm")
   @widget(new SliderWidget(40, 110, 5))
-  finishCardDistanceCm: number = 70
+  finishCardDistanceCm: number = 80
 
   @input
   @hint("How far below eye level the finish card floats, in cm")
   @widget(new SliderWidget(0, 40, 1))
-  finishCardDropCm: number = 10
+  finishCardDropCm: number = 15
 
   @input
   @hint("Stance card distance from the pad centre along the drill, in cm")

@@ -22,8 +22,11 @@ import {SlalomCoachStanceCardUI} from "./SlalomCoachStanceCardUI"
 import {SlalomCoachSnapshot, SlalomCoachTestState} from "./SlalomCoachTestState"
 import {SlalomCoachVirtualFloor} from "./SlalomCoachVirtualFloor"
 
-const STRIP_HEIGHT_CM = 25
-const STRIP_TILT_BACK_RAD = (55 * Math.PI) / 180
+const STRIP_HEIGHT_CM = 110
+const STRIP_TILT_BACK_RAD = (15 * Math.PI) / 180
+const STRIP_RIGHT_CM = 60
+const STRIP_WIDTH_CM = 38 * 1.15
+const STRIP_VIEW_MARGIN = 0.9
 const STRIP_SCALE = 1.15
 const CHANGE_BUTTON_W = 17
 const CHANGE_BUTTON_H = 4.6
@@ -443,10 +446,12 @@ export class SlalomCoachMain extends BaseScriptComponent {
       transform.setWorldPosition(origin)
       const yawRotation = quat.angleAxis(Math.atan2(-heading.x, -heading.z), vec3.up())
       transform.setWorldRotation(yawRotation)
-      // The setup strip lies on the pad's near half, 25 cm up, tilted back 55 degrees from vertical towards the wearer.
+      // The setup strip stands right of the pad, level with its near edge, 110 cm up, tilted back 15 degrees towards the wearer.
       const strip = this.setupPanel.getSceneObject().getTransform()
-      const nearHalf = -this.padSizeCm / 4
-      strip.setWorldPosition(new vec3(origin.x + heading.x * nearHalf, origin.y + STRIP_HEIGHT_CM, origin.z + heading.z * nearHalf))
+      const nearEdge = -this.padSizeCm / 2
+      const lateral = this.stripRightCm()
+      const right = new vec3(-heading.z, 0, heading.x)
+      strip.setWorldPosition(new vec3(origin.x + heading.x * nearEdge + right.x * lateral, origin.y + STRIP_HEIGHT_CM, origin.z + heading.z * nearEdge + right.z * lateral))
       strip.setWorldRotation(yawRotation.multiply(quat.angleAxis(-STRIP_TILT_BACK_RAD, vec3.right())))
     }
   }
@@ -546,7 +551,7 @@ export class SlalomCoachMain extends BaseScriptComponent {
           this.celebrated = true
           this.finishCard.setCelebrating(true)
           this.drill.playWave(new vec3(1, 0.239, 0.941), new vec3(1, 1, 1), WAVE_STEP_SEC)
-          this.shards?.burst(this.drillPoint(this.layout.finishS, 0, SHARD_BURST_HEIGHT_CM))
+          this.shards?.burst(this.drillPoint(this.layout.finishS, 0, SHARD_BURST_HEIGHT_CM), this.floorY)
         } else {
           this.missPulsed = true
           const missed: number[] = []
@@ -698,13 +703,21 @@ export class SlalomCoachMain extends BaseScriptComponent {
     return facingUpDrill && s < this.layout.coneS[index] && Math.abs(t) <= this.driftDistanceCm
   }
 
-  /** On the pad's near edge, 25 cm up, tilted back like the strip. */
+  /** Distance right of the pad centre for the strip and the button: 60 cm, or closer so the far edge stays in view. */
+  private stripRightCm(): number {
+    const halfWidth = Math.atan(Math.tan(this.camera.fov / 2) * this.camera.aspect) * STRIP_VIEW_MARGIN
+    const distanceAhead = this.ghostAheadCm - this.padSizeCm / 2
+    const fits = Math.tan(halfWidth) * distanceAhead - STRIP_WIDTH_CM / 2
+    return Math.max(0, Math.min(STRIP_RIGHT_CM, fits))
+  }
+
+  /** Right of the pad, level with its near edge, same height and tilt as the strip. */
   private placeChangeButton(): void {
     if (!this.changeButton) {
       return
     }
     const transform = this.changeButton.object.getParent().getTransform()
-    transform.setWorldPosition(this.drillPoint(-this.padSizeCm / 2, 0, STRIP_HEIGHT_CM))
+    transform.setWorldPosition(this.drillPoint(-this.padSizeCm / 2, this.stripRightCm(), STRIP_HEIGHT_CM))
     const yaw = quat.angleAxis(this.drillYaw, vec3.up())
     transform.setWorldRotation(yaw.multiply(quat.angleAxis(-STRIP_TILT_BACK_RAD, vec3.right())))
   }

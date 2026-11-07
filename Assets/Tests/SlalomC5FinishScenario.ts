@@ -206,10 +206,15 @@ export class SlalomC5FinishScenario extends Scenario {
       c.ok(`${when}: shards burst above the finish band`, state.shardCount > 20, `shards=${state.shardCount}`)
       let glitched = false
       let waveSeen = false
+      let stillFalling = false
       const parts = new DrillParts("Drill")
       const started = getTime()
-      while (getTime() - started < 4.2) {
+      while (getTime() - started < 6.4) {
         await frames(1)
+        const elapsed = getTime() - started
+        if (elapsed > 3.5 && elapsed < 4.5) {
+          stillFalling = stillFalling || snap().shardCount > 20
+        }
         glitched = glitched || snap().celebrating && findRequired("HeadlineGlitchMagenta").getComponent("Component.Text").enabled
         for (let i = 0; i < state.coneCount; i++) {
           waveSeen = waveSeen || findRequired(`PoleFlash_${i + 1}`, parts.root).enabled
@@ -217,7 +222,8 @@ export class SlalomC5FinishScenario extends Scenario {
       }
       c.ok(`${when}: the headline glitched within a few seconds`, glitched)
       c.ok(`${when}: poles flashed in a wave`, waveSeen)
-      c.ok(`${when}: shards are gone after about 2 s`, snap().shardCount === 0, `shards=${snap().shardCount}`)
+      c.ok(`${when}: shards are still falling at about 4 s`, stillFalling)
+      c.ok(`${when}: shards have faded out after about 6 s`, snap().shardCount === 0, `shards=${snap().shardCount}`)
     } else {
       c.ok(`${when}: run with misses does not celebrate`, !state.celebrating && !state.celebrated && state.shardCount === 0 && !(frameColour.x > 0.95 && frameColour.z > 0.9 && frameColour.y < 0.4), `celebrating=${state.celebrating} shards=${state.shardCount}`)
       c.ok(`${when}: missed cones pulse amber once`, state.missPulsed)
@@ -254,9 +260,11 @@ export class SlalomC5FinishScenario extends Scenario {
     const pad = new vec3(state.padCentre.x, state.padCentre.y, state.padCentre.z)
     const forward = new vec3(state.drillForward.x, 0, state.drillForward.z)
     const along = new vec3(position.x - pad.x, 0, position.z - pad.z).dot(forward)
-    c.near(`${when}: pad button is on the pad's near edge, cm before centre`, along, -50, 2)
-    c.near(`${when}: pad button is about 25 cm above the floor`, position.y - state.floorY, 25, 1)
-    c.near(`${when}: pad button is tilted back about 55 degrees from vertical (normal.y)`, root.getWorldRotation().multiplyVec3(new vec3(0, 0, 1)).y, 0.819, 0.05)
+    const side = new vec3(position.x - pad.x, 0, position.z - pad.z).dot(new vec3(-forward.z, 0, forward.x))
+    c.near(`${when}: pad button is level with the pad's near edge, cm before centre`, along, -50, 2)
+    c.between(`${when}: pad button is right of the pad centre (60 cm, or closer to stay in view), cm`, side, 10, 62)
+    c.near(`${when}: pad button is about 1.1 m above the floor`, position.y - state.floorY, 110, 1)
+    c.near(`${when}: pad button is tilted back about 15 degrees from vertical (normal.y)`, root.getWorldRotation().multiplyVec3(new vec3(0, 0, 1)).y, 0.259, 0.04)
   }
 
   private async waitForPanelToSettle(c: Checks): Promise<void> {

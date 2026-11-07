@@ -12,8 +12,11 @@ import {buildShardMesh} from "./SlalomCoachMeshes"
 const unlitMaterial = requireAsset("../Materials/SlalomUnlit.mat") as Material
 
 const SHARD_COUNT = 56
-const LIFETIME_SEC = 2
-const GRAVITY_CM_S2 = 260
+const FALL_SEC = 5
+const FADE_SEC = 1
+const LIFETIME_SEC = FALL_SEC + FADE_SEC
+const GRAVITY_CM_S2 = 80
+const DRAG_PER_SEC = 2.5
 
 interface Shard {
   object: SceneObject
@@ -31,6 +34,7 @@ export class SlalomCoachShards {
   private shards: Shard[] = []
   private active = false
   private elapsed = 0
+  private floorY = -1e9
 
   constructor() {
     this.root = global.scene.createSceneObject("CelebrationShards")
@@ -61,7 +65,8 @@ export class SlalomCoachShards {
   }
 
   /** Starts a burst centred on a world point. */
-  burst(centre: vec3): void {
+  burst(centre: vec3, floorY: number = -1e9): void {
+    this.floorY = floorY
     this.active = true
     this.elapsed = 0
     for (const shard of this.shards) {
@@ -115,12 +120,14 @@ export class SlalomCoachShards {
         shard.object.enabled = false
         continue
       }
-      shard.velocity = new vec3(shard.velocity.x, shard.velocity.y - GRAVITY_CM_S2 * dt, shard.velocity.z)
+      // Gravity with air drag: the shards flutter down slowly instead of dropping.
+      const drag = Math.exp(-DRAG_PER_SEC * dt)
+      shard.velocity = new vec3(shard.velocity.x * drag, (shard.velocity.y - GRAVITY_CM_S2 * dt) * drag, shard.velocity.z * drag)
       const transform = shard.object.getTransform()
-      transform.setWorldPosition(transform.getWorldPosition().add(shard.velocity.uniformScale(dt)))
+      const moved = transform.getWorldPosition().add(shard.velocity.uniformScale(dt))
+      transform.setWorldPosition(new vec3(moved.x, Math.max(moved.y, this.floorY + 0.5), moved.z))
       transform.setWorldRotation(quat.angleAxis(shard.spinSpeed * dt, shard.spinAxis).multiply(transform.getWorldRotation()))
-      const life = shard.age / LIFETIME_SEC
-      const alpha = life < 0.6 ? 1 : 1 - (life - 0.6) / 0.4
+      const alpha = shard.age < FALL_SEC ? 1 : 1 - (shard.age - FALL_SEC) / FADE_SEC
       shard.material.mainPass.baseColor = new vec4(shard.color.x, shard.color.y, shard.color.z, alpha)
     }
     if (this.elapsed >= LIFETIME_SEC) {

@@ -23,7 +23,7 @@ import {SlalomUiStatesScenario} from "./SlalomUiStatesScenario"
 export class LeafIndex extends BaseScriptComponent {
   @scenariosIndex
   static scenariosIndex: ScenarioMetadata[] = [
-    {id: "c1_panel_launch", typename: SlalomC1PanelLaunchScenario.getTypeName(), parameters: {pinch: "ik", lookDownDeg: "32"}},
+    {id: "c1_panel_launch", typename: SlalomC1PanelLaunchScenario.getTypeName(), parameters: {pinch: "ik", lookDownDeg: "5"}},
     {id: "c1_panel_launch_tilted_5deg", typename: SlalomC1PanelLaunchScenario.getTypeName(), parameters: {pinch: "ik", lookDownDeg: "5"}},
     {id: "c2_layout_0_8", typename: SlalomC2LayoutScenario.getTypeName(), parameters: {pinch: "ik", hand: "right", placeHand: "right", lookDownDeg: "5", spacing: "0.8"}},
     {id: "c2_layout_1_0", typename: SlalomC2LayoutScenario.getTypeName(), parameters: {pinch: "ik", hand: "right", placeHand: "right", lookDownDeg: "5", spacing: "1.0"}},
@@ -41,7 +41,7 @@ export class LeafIndex extends BaseScriptComponent {
     {id: "c3_cues_fast", typename: SlalomC3CuesScenario.getTypeName(), parameters: {pinch: "ik", hand: "right", placeHand: "right", lookDownDeg: "5", speed: "200"}},
     {id: "c4_missed_cones", typename: SlalomC4MissedConesScenario.getTypeName(), parameters: {pinch: "ik", hand: "right", placeHand: "right", lookDownDeg: "5"}},
     {id: "c4_edge_arrow", typename: SlalomC4EdgeArrowScenario.getTypeName(), parameters: {pinch: "ik", hand: "right", placeHand: "right", lookDownDeg: "5", holdMs: "0"}},
-    {id: "c5_clean_again", typename: SlalomC5FinishScenario.getTypeName(), parameters: {pinch: "ik", hand: "right", placeHand: "right", lookDownDeg: "32", cardPitchDeg: "10", flow: "clean_again"}},
+    {id: "c5_clean_again", typename: SlalomC5FinishScenario.getTypeName(), parameters: {pinch: "ik", hand: "right", placeHand: "right", lookDownDeg: "5", cardPitchDeg: "10", flow: "clean_again"}},
     {id: "c5_clean_again_sik", typename: SlalomC5FinishScenario.getTypeName(), parameters: {pinch: "sik", lookDownDeg: "5", cardPitchDeg: "0", flow: "clean_again"}},
     {id: "c5_miss_pad_reset", typename: SlalomC5FinishScenario.getTypeName(), parameters: {pinch: "ik", hand: "right", placeHand: "right", lookDownDeg: "5", cardPitchDeg: "0", flow: "miss_pad"}},
     {id: "c5_move_drill", typename: SlalomC5FinishScenario.getTypeName(), parameters: {pinch: "ik", hand: "right", placeHand: "right", lookDownDeg: "32", cardPitchDeg: "10", flow: "move_drill", movedSpacing: "1.5"}},

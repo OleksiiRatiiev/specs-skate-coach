@@ -1,6 +1,6 @@
 /**
  * Criterion 1, part 1: what is on screen at launch. No pinch. Measures the setup strip anchored to the
- * ghost's start pad (centred on the pad's near half, about 25 cm above the floor, tilted back about 55 degrees from vertical, scaled up 15%, moving with the ghost),
+ * ghost's start pad (60 cm right of the pad centre, level with its near edge, 1.1 m above the floor, tilted back about 15 degrees, scaled up 15%, moving with the ghost),
  * its two stepper rows and PLACE DRILL button, text sizes and neon colours, and the ghost drill (from launch,
  * about 2 m ahead, turning with the view). Nothing in the scene is moved to make a check pass.
  */
@@ -94,9 +94,7 @@ export class SlalomC1PanelLaunchScenario extends Scenario {
     const stripCentre = v3(snap().stripPosition)
     const view = rig.viewOf(stripCentre)
     c.info("frustum", `${fmtV(stripCentre)} ${frustumOf(rig, stripCentre)} distance=${fmt(stripCentre.distance(rig.actualEye()))}`)
-    if (rig.pitchDownDeg() >= 4) {
-      c.ok("launch: strip centre is inside the camera view", view.inView, `screen=(${fmt(view.x)},${fmt(view.y)})`)
-    }
+    c.ok("launch: strip centre is inside the camera view", view.inView, `screen=(${fmt(view.x)},${fmt(view.y)})`)
     void ghostPad
 
     // Ghost: from launch, six cones at the default spacing, about 2 m ahead and turning with the view.
@@ -128,14 +126,22 @@ export class SlalomC1PanelLaunchScenario extends Scenario {
     const offset = new vec3(strip.x - ghostPad.x, 0, strip.z - ghostPad.z)
     const along = offset.dot(heading)
     const sideways = offset.dot(new vec3(-heading.z, 0, heading.x))
-    c.near(`strip ${when}: centred across the pad, cm`, sideways, 0, 0.5)
-    c.between(`strip ${when}: over the pad's near half (about 25 cm before its centre), cm`, along, -35, -15)
-    c.ok(`strip ${when}: inside the pad outline`, Math.abs(along) <= 50 && Math.abs(sideways) <= 50, `along=${fmt(along)} sideways=${fmt(sideways)}`)
-    c.near(`strip ${when}: about 25 cm above the floor, cm`, strip.y - ghostPad.y, 25, 1)
-    // Facing +Z tilted back by 55 degrees from vertical: the normal points up by sin(55) = 0.819.
-    c.near(`strip ${when}: tilted back about 55 degrees from vertical (normal.y)`, facing.y, 0.819, 0.05)
+    c.between(`strip ${when}: right of the pad centre (60 cm, or closer to the path only as far as needed to stay in view), cm`, sideways, 10, 62)
+    c.ok(`strip ${when}: on the right and well before cone 1, never over the cones`, sideways > 0 && along <= -45 && along < -50 + 2, `along=${fmt(along)} sideways=${fmt(sideways)}`)
+    c.near(`strip ${when}: level with the pad's near edge, cm`, along, -50, 2)
+    c.near(`strip ${when}: about 1.1 m above the floor, cm`, strip.y - ghostPad.y, 110, 1)
+    // Facing +Z tilted back by 15 degrees from vertical: the normal points up by sin(15) = 0.259.
+    c.near(`strip ${when}: tilted back about 15 degrees from vertical (normal.y)`, facing.y, 0.259, 0.04)
+    c.ok(`strip ${when}: turned to face me`, new vec3(facing.x, 0, facing.z).normalize().dot(heading) < -0.95, `facing=${fmtV(facing)}`)
+    c.ok(`strip ${when}: whole strip inside the camera view`, this.stripCornersInView(rig, strip, facing), "")
     const scale = findRequired("SetupPanel").getTransform().getWorldScale()
     c.near(`strip ${when}: scaled up about 15%`, scale.x, 1.15, 0.03)
+  }
+
+  private stripCornersInView(rig: SkaterRig, centre: vec3, facing: vec3): boolean {
+    const across = new vec3(-facing.z, 0, facing.x).normalize()
+    const half = (38 * 1.15) / 2
+    return [-1, 1].every((side) => rig.viewOf(centre.add(across.uniformScale(side * half))).inView)
   }
 
   private async checkGhost(c: Checks, rig: SkaterRig, ghost: DrillParts, when: string, spacing: number): Promise<void> {
